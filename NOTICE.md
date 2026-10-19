@@ -12,4 +12,8 @@ identity and preferences, simplified feature boundaries, new SwiftUI views,
 stricter DDC response validation and a smaller standalone application.
 
 Blank Office templates originate from the same reference project's Resources/FileTemplates.
-No upstream brand, application icon or UI assets are used.
+StatusIcon.swift and status-button event routing are adapted from the reference
+BlackHoleGlyph and StatusItemController. ICNS packing in Tools/Icon.swift is
+adapted from its MakeIcon.swift. Copyright (C) 2026 Vorssaint.
+The 1Tool wrench artwork in Tools/Icon.swift and Resources/Brand is original
+to this project. No reference-project brand assets are included.

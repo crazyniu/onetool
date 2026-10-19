@@ -11,6 +11,12 @@ import AppKit
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("onetool-checks-" + UUID().uuidString)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: dir) }
+        let symbolExists: (String) -> Bool = { NSImage(systemSymbolName: $0, accessibilityDescription: nil) != nil }
+        check(StatusIconSelection.toSave(typed: "  \n", opening: "star.fill", exists: symbolExists) == "", "empty icon name restores bundled logo")
+        check(StatusIconSelection.toSave(typed: " star.fill \n", opening: "", exists: symbolExists) == "star.fill", "valid icon name is trimmed and saved")
+        check(StatusIconSelection.toSave(typed: "onetool.invalid.symbol", opening: "heart.fill", exists: symbolExists) == "heart.fill", "invalid icon name preserves opening selection")
+        check(Set(StatusIconSelection.gallery).count == 40, "reference icon gallery contains 40 unique choices")
+        check(BrandGlyph.customMark(named: "star.fill")?.size == BrandGlyph.pointSize, "chosen symbol uses the reference icon canvas")
         check(SuperRightClickFiles.validName("你好 ' $().txt"), "valid Unicode file name")
         for bad in ["", ".", "..", "a/b", "a:b", "a\0b", String(repeating: "a", count: 256)] {
             check(!SuperRightClickFiles.validName(bad), "reject invalid file name")
@@ -72,8 +78,13 @@ import AppKit
         check(awake.isActive && awake.error == nil && awake.endDate != nil, "real IOPM assertion starts")
         RunLoop.main.run(until: Date().addingTimeInterval(0.3))
         check(!awake.isActive && awake.endDate == nil, "timer releases real IOPM assertion")
-        awake.start(); check(awake.isActive && awake.endDate == nil, "indefinite awake session")
+        awake.start(); check(awake.isActive && awake.endDate == nil && awake.durationMinutes == nil, "indefinite awake session")
         awake.stop(); check(!awake.isActive, "manual stop releases session")
+        awake.start(minutes: 480)
+        check(awake.isActive && awake.durationMinutes == 480 && abs((awake.endDate?.timeIntervalSinceNow ?? 0) - 28800) < 2, "eight-hour session has the requested deadline")
+        awake.preventDisk = true
+        check(awake.durationMinutes == 480 && abs((awake.endDate?.timeIntervalSinceNow ?? 0) - 28800) < 2, "configuration change preserves duration selection and deadline")
+        awake.stop()
         print("PASS: \(count) checks")
         if CommandLine.arguments.contains("--hardware") {
             print("INPUT SOURCES: " + InputSourceSelection.availableReadings().map { "\($0.name)=\($0.id)" }.joined(separator: ", "))

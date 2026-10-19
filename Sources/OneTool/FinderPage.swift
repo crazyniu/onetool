@@ -2,6 +2,7 @@
 import SwiftUI
 
 struct FinderPage: View {
+    @Environment(\.toolAccent) private var accent
     @Bindable var service: RightClick
     @State private var tab = 0
     @State private var editing: SuperRightClickEntry?
@@ -11,7 +12,7 @@ struct FinderPage: View {
             Divider()
             HStack(spacing: 10) {
                 Image(systemName: service.extensionEnabled ? "checkmark.circle.fill" : "puzzlepiece.extension")
-                    .foregroundStyle(service.extensionEnabled ? Theme.accent : .secondary)
+                    .foregroundStyle(service.extensionEnabled ? accent : .secondary)
                 Text(service.extensionEnabled ? "Finder 扩展已启用" : "需要在系统设置中允许 Finder 扩展").font(.callout)
                 Spacer()
                 Button(service.extensionEnabled ? "管理扩展…" : "启用扩展…") { service.openExtensionSettings() }
@@ -48,7 +49,7 @@ struct FinderPage: View {
                 if service.configuration.templates.isEmpty { HelpText("添加常用文件类型，右键时直接创建。") }
                 ForEach(service.configuration.templates) { entry in
                     HStack {
-                        Image(systemName: "doc.text").foregroundStyle(Theme.accent)
+                        Image(systemName: "doc.text").foregroundStyle(accent)
                         VStack(alignment: .leading, spacing: 3) {
                             Text(entry.name)
                             HelpText("." + entry.value)
@@ -68,7 +69,7 @@ struct FinderPage: View {
                 if service.configuration.directories.isEmpty { HelpText("把经常访问的目录放进右键菜单。") }
                 ForEach($service.configuration.directories) { $entry in
                     HStack {
-                        Image(systemName: "folder").foregroundStyle(Theme.accent)
+                        Image(systemName: "folder").foregroundStyle(accent)
                         VStack(alignment: .leading, spacing: 3) {
                             TextField("菜单名称", text: $entry.name).textFieldStyle(.plain).accessibilityLabel("目录菜单名称 " + entry.name)
                             HelpText(entry.value).lineLimit(1)

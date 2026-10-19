@@ -21,11 +21,10 @@ cp Resources/FinderExtension-Info.plist "$EXT/Contents/Info.plist"
 cp -R Resources/FileTemplates "$APP/Contents/Resources/"
 cp LICENSE "$APP/Contents/Resources/LICENSE.txt"
 cp NOTICE.md "$APP/Contents/Resources/NOTICE.md"
-if [[ ! -f build/AppIcon.icns || Tools/Icon.swift -nt build/AppIcon.icns ]]; then
+if [[ ! -f build/MenuBarIcon.png || ! -f build/AppIcon.icns || Tools/Icon.swift -nt build/AppIcon.icns || Resources/Brand/logo.png -nt build/AppIcon.icns || Resources/Brand/AppIcon-Default.png -nt build/AppIcon.icns ]]; then
     xcrun swift Tools/Icon.swift build/AppIcon.iconset
-    iconutil -c icns build/AppIcon.iconset -o build/AppIcon.icns
 fi
-cp build/AppIcon.icns "$APP/Contents/Resources/"
+cp build/AppIcon.icns build/MenuBarIcon.png build/MenuBarIcon@2x.png build/BrandMark.png "$APP/Contents/Resources/"
 IDENTITY="${CODE_SIGN_IDENTITY:-$(security find-identity -v -p codesigning | sed -n 's/.*"\(Apple Development:.*\)"/\1/p' | head -1)}"
 IDENTITY="${IDENTITY:--}"
 codesign --force --options runtime --entitlements Resources/FinderExtension.entitlements --sign "$IDENTITY" "$EXT"

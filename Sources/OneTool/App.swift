@@ -38,19 +38,6 @@ enum ToolPage: String, CaseIterable, Identifiable {
     }
 }
 
-struct StatusIcon: Identifiable {
-    let id: String
-    let name: String
-    static let all: [Self] = [
-        .init(id: "switch.2", name: "开关"), .init(id: "1.circle", name: "一"),
-        .init(id: "cup.and.saucer", name: "咖啡"), .init(id: "bolt", name: "闪电"),
-        .init(id: "sun.max", name: "太阳"), .init(id: "moon", name: "月亮"),
-        .init(id: "leaf", name: "叶子"), .init(id: "sparkle", name: "星光"),
-        .init(id: "command", name: "Command"), .init(id: "keyboard", name: "键盘"),
-        .init(id: "display", name: "屏幕"), .init(id: "circle.hexagongrid", name: "蜂巢")
-    ]
-}
-
 @Observable final class AppModel {
     static let shared = AppModel()
     var page: ToolPage = .awake
@@ -61,6 +48,8 @@ struct StatusIcon: Identifiable {
     let input = InputSources()
     var loginStatus = SMAppService.mainApp.status
     var loginError: String?
+    @ObservationIgnored var openMainWindow: ((ToolPage) -> Void)?
+    @ObservationIgnored var dismissQuickPanel: (() -> Void)?
 
     func setLogin(_ enabled: Bool) {
         do {
@@ -75,7 +64,18 @@ struct StatusIcon: Identifiable {
     }
 }
 
-final class AppDelegate: NSObject, NSApplicationDelegate {
+@MainActor final class AppDelegate: NSObject, NSApplicationDelegate {
+    private var status: StatusBarController?
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        status = StatusBarController(model: AppModel.shared)
+    }
+    @objc func showQuickPanel() {
+        DispatchQueue.main.async { [weak self] in self?.status?.togglePanel() }
+    }
+    @objc func showStatusMenu() {
+        // Finish tracking the application menu before opening a second native menu.
+        DispatchQueue.main.async { [weak self] in self?.status?.showMenu() }
+    }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
     func applicationWillTerminate(_ notification: Notification) {
         AppModel.shared.finder.stop()
@@ -93,33 +93,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 @main struct OneToolApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @State private var model = AppModel.shared
-    @AppStorage("appearance.icon") private var icon = "switch.2"
     @AppStorage("appearance.scheme") private var scheme = "system"
-    @AppStorage("appearance.activeDot") private var activeDot = true
+    @AppStorage("appearance.accent") private var accent = "blue"
 
     var body: some Scene {
         Window("1Tool", id: "main") {
-            MainView(model: model)
+            AppRoot(model: model)
                 .preferredColorScheme(scheme == "dark" ? .dark : scheme == "light" ? .light : nil)
-                .tint(Theme.accent)
+                .environment(\.toolAccent, AppAccent.resolve(accent).color)
+                .tint(AppAccent.resolve(accent).color)
                 .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in model.refresh() }
         }
         .defaultSize(width: 940, height: 710)
         .windowToolbarStyle(.unifiedCompact)
         .commands {
             CommandGroup(replacing: .appSettings) { OpenMainButton(title: "1Tool 设置…", page: .appearance).keyboardShortcut(",") }
-        }
-        MenuBarExtra {
-            QuickPanel(model: model).tint(Theme.accent)
-                .preferredColorScheme(scheme == "dark" ? .dark : scheme == "light" ? .light : nil)
-        } label: {
-            HStack(spacing: 3) {
-                Image(systemName: StatusIcon.all.contains(where: { $0.id == icon }) ? icon : "switch.2")
-                if model.awake.isActive && activeDot { Image(systemName: "circle.fill").font(.system(size: 5)) }
+            CommandGroup(after: .appSettings) {
+                Button("打开快捷面板") { delegate.showQuickPanel() }
+                Button("显示状态栏菜单") { delegate.showStatusMenu() }
             }
-            .accessibilityLabel(model.awake.isActive ? "1Tool，防休眠已开启" : "1Tool")
         }
-        .menuBarExtraStyle(.window)
+
     }
 }
 
@@ -129,9 +123,23 @@ struct OpenMainButton: View {
     @Environment(\.openWindow) private var openWindow
     var body: some View {
         Button(title) {
-            AppModel.shared.page = page
-            openWindow(id: "main")
-            NSApp.activate(ignoringOtherApps: true)
+            AppModel.shared.dismissQuickPanel?()
+            if let open = AppModel.shared.openMainWindow { open(page) }
+            else { AppModel.shared.page = page; openWindow(id: "main"); NSApp.activate(ignoringOtherApps: true) }
+        }
+    }
+}
+
+struct AppRoot: View {
+    let model: AppModel
+    @Environment(\.openWindow) private var openWindow
+    var body: some View {
+        MainView(model: model).background(WindowTitleHider()).onAppear {
+            model.openMainWindow = { page in
+                model.page = page
+                openWindow(id: "main")
+                NSApp.activate(ignoringOtherApps: true)
+            }
         }
     }
 }

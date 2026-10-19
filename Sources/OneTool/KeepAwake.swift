@@ -13,6 +13,7 @@ import IOKit.ps
     var onBattery = false { didSet { save(); applyPowerRule() } }
     private(set) var isActive = false
     private(set) var endDate: Date?
+    private(set) var durationMinutes: Double?
     private(set) var error: String?
     private(set) var automatic = false
     private(set) var isOnAC = true
@@ -66,6 +67,7 @@ import IOKit.ps
             created.append(id)
         }
         assertions = created
+        durationMinutes = minutes.flatMap { $0 > 0 ? $0 : nil }
         isActive = true
         self.automatic = automatic
         error = nil
@@ -80,7 +82,7 @@ import IOKit.ps
     func stop() {
         expiry?.invalidate(); expiry = nil
         assertions.forEach { IOPMAssertionRelease($0) }; assertions.removeAll()
-        isActive = false; automatic = false; endDate = nil
+        isActive = false; automatic = false; endDate = nil; durationMinutes = nil
     }
 
     var assertionTypes: [String] {
@@ -97,8 +99,10 @@ import IOKit.ps
         guard isActive else { return }
         let remaining = endDate.map { max(0, $0.timeIntervalSinceNow / 60) }
         let wasAutomatic = automatic
+        let originalDuration = durationMinutes
         if let remaining, remaining <= 0 { stop(); return }
         start(minutes: remaining, automatic: wasAutomatic)
+        durationMinutes = originalDuration
     }
     private func powerChanged() {
         var nextOnAC = isOnAC

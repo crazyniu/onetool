@@ -2,46 +2,36 @@
 import SwiftUI
 import ServiceManagement
 
-enum Theme {
-    static let accent = Color(nsColor: NSColor(name: nil) { appearance in
-        appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-            ? NSColor(calibratedRed: 0.34, green: 0.78, blue: 0.72, alpha: 1)
-            : NSColor(calibratedRed: 0.0, green: 0.43, blue: 0.39, alpha: 1)
-    })
-    static let surface = Color(nsColor: .windowBackgroundColor)
-}
-
 struct MainView: View {
+    @Environment(\.toolAccent) private var accent
     @Bindable var model: AppModel
     var body: some View {
         HStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 22) {
-                HStack(spacing: 10) {
-                    Image(systemName: "switch.2").font(.system(size: 25, weight: .medium)).foregroundStyle(Theme.accent)
-                    Text("1Tool").font(.system(size: 25, weight: .semibold, design: .rounded))
-                }.padding(.horizontal, 14).padding(.top, 22)
+                Image(nsImage: BrandGlyph.applicationIcon).resizable().scaledToFit()
+                    .frame(width: 40, height: 40).accessibilityLabel("1Tool")
+                    .padding(.horizontal, 12).padding(.top, 14)
                 VStack(spacing: 5) {
                     ForEach(ToolPage.allCases.filter { $0 != .appearance }) { page in nav(page) }
                 }
                 Spacer()
                 if model.awake.isActive {
                     Label("正在保持唤醒", systemImage: "circle.fill")
-                        .font(.system(size: 12)).foregroundStyle(Theme.accent).padding(.horizontal, 14)
+                        .font(.system(size: 12)).foregroundStyle(accent).padding(.horizontal, 14)
                 }
                 VStack(alignment: .leading, spacing: 14) {
                     nav(.appearance)
-                    Text("1Tool  1.0.0").font(.caption).foregroundStyle(.secondary).padding(.horizontal, 14)
                 }.padding(.bottom, 20)
             }
             .padding(.horizontal, 12).frame(width: 200)
-            .background(Color(nsColor: .windowBackgroundColor))
+            .background(Theme.canvas)
             Divider()
             ScrollView {
-                VStack(alignment: .leading, spacing: 26) {
+                VStack(alignment: .leading, spacing: 16) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(model.page.title).font(.system(size: 27, weight: .semibold))
+                        Text(model.page.title).font(.system(size: 24, weight: .semibold))
                         Text(model.page.subtitle).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                    }.padding(.bottom, 4)
+                    }.padding(.bottom, 2)
                     switch model.page {
                     case .awake: AwakePage(awake: model.awake)
                     case .finder: FinderPage(service: model.finder)
@@ -50,8 +40,8 @@ struct MainView: View {
                     case .input: InputPage(input: model.input)
                     case .appearance: AppearancePage(model: model)
                     }
-                }.padding(32).frame(maxWidth: 820, alignment: .leading).frame(maxWidth: .infinity)
-            }.background(Color(nsColor: .textBackgroundColor))
+                }.padding(24).frame(maxWidth: 760, alignment: .leading).frame(maxWidth: .infinity)
+            }.background(Theme.canvas)
         }
         .frame(minWidth: 840, minHeight: 620)
     }
@@ -63,8 +53,8 @@ struct MainView: View {
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 12).padding(.vertical, 11)
-            .foregroundStyle(model.page == page ? Theme.accent : Color.primary)
-            .background(model.page == page ? Theme.accent.opacity(0.11) : .clear, in: RoundedRectangle(cornerRadius: 9))
+            .foregroundStyle(Color.primary)
+            .background(model.page == page ? accent.opacity(0.11) : .clear, in: RoundedRectangle(cornerRadius: 9))
             .contentShape(Rectangle())
         }.buttonStyle(.plain).accessibilityAddTraits(model.page == page ? .isSelected : [])
     }
@@ -74,11 +64,11 @@ struct ToolSection<Content: View>: View {
     let title: String
     @ViewBuilder var content: Content
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            if !title.isEmpty { Text(title).font(.system(size: 14, weight: .semibold)) }
-            VStack(alignment: .leading, spacing: 16) { content }
-                .padding(18).frame(maxWidth: .infinity, alignment: .leading)
-                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
+        VStack(alignment: .leading, spacing: 8) {
+            if !title.isEmpty { Text(title).font(.system(size: 13, weight: .semibold)).padding(.horizontal, 14) }
+            VStack(alignment: .leading, spacing: 10) { content }
+                .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14))
         }
     }
 }
@@ -98,7 +88,7 @@ struct SettingToggle: View {
     var subtitle: String? = nil
     @Binding var value: Bool
     var body: some View {
-        HStack(spacing: 18) {
+        HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                 if let subtitle { HelpText(subtitle) }
@@ -110,16 +100,17 @@ struct SettingToggle: View {
 }
 
 struct AwakePage: View {
+    @Environment(\.toolAccent) private var accent
     @Bindable var awake: KeepAwake
-    @State private var duration = 30.0
-    private let durations: [(String, Double)] = [("5 分钟", 5), ("10 分钟", 10), ("30 分钟", 30), ("1 小时", 60), ("2 小时", 120), ("永久", 0)]
+    @State private var duration = 60.0
+    private let durations: [(String, Double)] = [("30 分钟", 30), ("1 小时", 60), ("2 小时", 120), ("4 小时", 240), ("8 小时", 480), ("无限", 0)]
     var body: some View {
         ToolSection(title: "") {
             HStack(spacing: 16) {
                 Image(systemName: awake.isActive ? "cup.and.saucer.fill" : "cup.and.saucer")
-                    .font(.system(size: 32)).foregroundStyle(awake.isActive ? Theme.accent : .secondary)
+                    .font(.system(size: 32)).foregroundStyle(awake.isActive ? accent : .secondary)
                 VStack(alignment: .leading, spacing: 5) {
-                    Text(awake.isActive ? "Mac 正在保持唤醒" : "按需唤醒，自在工作").font(.system(size: 18, weight: .semibold))
+                    Text(awake.isActive ? "Mac 正在保持唤醒" : "按需唤醒，自在工作").font(.system(size: 16, weight: .semibold))
                     if let end = awake.endDate {
                         TimelineView(.periodic(from: .now, by: 1)) { context in
                             let seconds = max(0, Int(end.timeIntervalSince(context.date)))
@@ -130,11 +121,16 @@ struct AwakePage: View {
                 Spacer(minLength: 8)
                 Button(awake.isActive ? "结束" : "开始") {
                     if awake.isActive { awake.stop() } else { awake.start(minutes: duration == 0 ? nil : duration) }
-                }.buttonStyle(.borderedProminent).controlSize(.large)
+                }.modifier(PrimaryAction()).controlSize(.large)
             }
             Divider()
-            Picker("持续时间", selection: $duration) {
-                ForEach(durations, id: \.1) { Text($0.0).tag($0.1) }
+            Picker("持续时间", selection: Binding(get: {
+                awake.isActive ? (awake.durationMinutes ?? 0) : duration
+            }, set: { duration = $0 })) {
+                ForEach(durations, id: \.1) { item in
+                    if item.1 == 0 { Image(systemName: "infinity").accessibilityLabel("无限防休眠").tag(item.1) }
+                    else { Text(item.0).tag(item.1) }
+                }
             }.pickerStyle(.segmented).labelsHidden().disabled(awake.isActive)
             ErrorText(error: awake.error)
         }
@@ -171,16 +167,17 @@ struct LevelSlider: View {
 }
 
 struct KeyboardPage: View {
+    @Environment(\.toolAccent) private var accent
     let keyboard: KeyboardLight
     var body: some View {
         ToolSection(title: "内置键盘") {
             HStack(spacing: 16) {
-                Image(systemName: "keyboard").font(.system(size: 45)).foregroundStyle(Theme.accent)
+                Image(systemName: "keyboard").font(.system(size: 28)).foregroundStyle(accent)
                 VStack(alignment: .leading, spacing: 5) {
                     Text(keyboard.supported ? "键盘背光亮度" : "未检测到可调节的键盘背光").fontWeight(.medium)
                     HelpText(keyboard.supported ? "拖动滑块立即调节" : "此功能需要支持背光的 Mac 内置键盘。")
                 }
-            }.padding(.vertical, 10)
+            }.padding(.vertical, 4)
             if keyboard.supported {
                 LevelSlider(title: "键盘背光", value: Binding(get: { keyboard.level }, set: { keyboard.set($0) }))
                 HStack {
@@ -205,6 +202,7 @@ struct KeyboardPage: View {
 }
 
 struct DisplaysPage: View {
+    @Environment(\.toolAccent) private var accent
     let displays: Displays
     var body: some View {
         HStack {
@@ -216,7 +214,7 @@ struct DisplaysPage: View {
         ForEach(displays.screens) { screen in
             ToolSection(title: "") {
                 HStack(spacing: 12) {
-                    Image(systemName: screen.builtIn ? "laptopcomputer" : "display").font(.system(size: 28)).foregroundStyle(Theme.accent)
+                    Image(systemName: screen.builtIn ? "laptopcomputer" : "display").font(.system(size: 28)).foregroundStyle(accent)
                     VStack(alignment: .leading, spacing: 4) {
                         Text(screen.name).fontWeight(.semibold)
                         HelpText((screen.builtIn ? "内置显示器 · " : "外接显示器 · ") + screen.method.rawValue)
@@ -291,48 +289,38 @@ struct InputPage: View {
                 Text("输入法不可用").tag(value.wrappedValue)
             }
             ForEach(input.sources, id: \.id) { source in Text(source.name).tag(source.id) }
-        }.labelsHidden().fixedSize().accessibilityLabel(title)
+        }.labelsHidden().frame(width: 180).accessibilityLabel(title)
     }
 }
 
 struct AppearancePage: View {
+    @Environment(\.toolAccent) private var accent
     @Bindable var model: AppModel
-    @AppStorage("appearance.icon") private var icon = "switch.2"
-    @AppStorage("appearance.scheme") private var scheme = "system"
+    @AppStorage("appearance.icon") private var icon = ""
+    @State private var editingIconName = false
     @AppStorage("appearance.activeDot") private var activeDot = true
     var body: some View {
+        AppearanceControls()
         ToolSection(title: "状态栏图标") {
             HStack {
-                Text("选一个喜欢的图标").fontWeight(.medium)
+                Text("图标").fontWeight(.medium)
                 Spacer()
-                Image(systemName: icon).font(.system(size: 18)).frame(width: 40, height: 28)
+                Image(nsImage: BrandGlyph.mark() ?? NSImage()).renderingMode(.template).frame(width: 40, height: 28)
                     .background(Color(nsColor: .windowBackgroundColor), in: RoundedRectangle(cornerRadius: 6))
             }
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 6), spacing: 10) {
-                ForEach(StatusIcon.all) { item in
-                    Button { icon = item.id } label: {
-                        VStack(spacing: 8) {
-                            Image(systemName: item.id).font(.system(size: 21)).frame(height: 25)
-                            Text(item.name).font(.system(size: 11))
-                        }.frame(maxWidth: .infinity).padding(.vertical, 12)
-                            .foregroundStyle(icon == item.id ? Theme.accent : .primary)
-                            .background(icon == item.id ? Theme.accent.opacity(0.12) : Color(nsColor: .windowBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
-                            .overlay(alignment: .topTrailing) {
-                                if icon == item.id { Image(systemName: "checkmark.circle.fill").font(.system(size: 11)).foregroundStyle(Theme.accent).padding(4) }
-                            }
-                    }.buttonStyle(.plain).accessibilityLabel(item.name).accessibilityAddTraits(icon == item.id ? .isSelected : [])
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 42, maximum: 48), spacing: 8)], alignment: .leading, spacing: 8) {
+                iconCell(name: "", title: "默认 Logo")
+                ForEach(StatusIconSelection.gallery.filter { NSImage(systemSymbolName: $0, accessibilityDescription: nil) != nil }, id: \.self) { name in
+                    iconCell(name: name, title: name)
                 }
             }
+            Button("其他图标…") { editingIconName = true }.font(.callout)
+            HelpText("默认使用 1Tool 扳手 Logo。可选择图库图标，或输入其他符号名称；留空恢复默认。")
             Divider()
             SettingToggle(title: "防休眠开启时显示状态圆点", value: $activeDot)
         }
-        ToolSection(title: "外观与启动") {
-            HStack {
-                Text("外观"); Spacer()
-                Picker("外观", selection: $scheme) { Text("跟随系统").tag("system"); Text("浅色").tag("light"); Text("深色").tag("dark") }
-                    .labelsHidden().frame(width: 155)
-            }
-            Divider()
+        .popover(isPresented: $editingIconName) { IconNameEditor() }
+        ToolSection(title: "启动与运行") {
             SettingToggle(title: "登录时启动 1Tool", value: Binding(get: { model.loginStatus == .enabled || model.loginStatus == .requiresApproval }, set: { model.setLogin($0) }))
             if model.loginStatus == .requiresApproval {
                 HStack { HelpText("请在系统设置中允许 1Tool 登录启动。"); Button("打开设置") { SMAppService.openSystemSettingsLoginItems() } }
@@ -341,12 +329,48 @@ struct AppearancePage: View {
             HelpText("关闭窗口后，1Tool 会继续在状态栏运行。退出应用会结束防休眠并恢复软件调暗。")
         }
         HStack {
-            Text("1Tool 1.0.0").foregroundStyle(.secondary)
             Spacer()
             Button("开源许可") {
                 if let url = Bundle.main.url(forResource: "LICENSE", withExtension: "txt") { NSWorkspace.shared.open(url) }
             }
             Button("退出 1Tool") { NSApp.terminate(nil) }
         }.font(.callout)
+    }
+    private func iconCell(name: String, title: String) -> some View {
+        Button { icon = name } label: {
+            VStack(spacing: 7) {
+                Image(nsImage: BrandGlyph.mark(symbolName: name) ?? NSImage())
+                    .renderingMode(.template).frame(height: 25)
+            }.frame(maxWidth: .infinity).frame(height: 42)
+                .foregroundStyle(icon == name ? accent : .primary)
+                .background(icon == name ? accent.opacity(0.12) : Color(nsColor: .windowBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
+                .overlay(alignment: .topTrailing) {
+                    if icon == name { Image(systemName: "checkmark.circle.fill").font(.system(size: 11)).foregroundStyle(accent).padding(4) }
+                }
+        }.buttonStyle(.plain).help(title).accessibilityLabel(title).accessibilityAddTraits(icon == name ? .isSelected : [])
+
+    }
+
+}
+
+private struct IconNameEditor: View {
+    @Environment(\.dismiss) private var dismiss
+    @AppStorage("appearance.icon") private var savedName = ""
+    @State private var draft = ""
+    @State private var openingName = ""
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("其他图标").font(.headline)
+            TextField("图标名称，例如 bolt.fill", text: $draft).textFieldStyle(.roundedBorder)
+                .onSubmit { dismiss() }
+            HelpText("留空恢复默认 Logo；无效名称会恢复打开前的选择。")
+            HStack { Spacer(); Button("完成") { dismiss() }.keyboardShortcut(.defaultAction) }
+        }.padding(20).frame(width: 300)
+            .onAppear { openingName = savedName; draft = savedName }
+            .onChange(of: draft) {
+                savedName = StatusIconSelection.toSave(typed: draft, opening: openingName) {
+                    NSImage(systemSymbolName: $0, accessibilityDescription: nil) != nil
+                }
+            }
     }
 }
