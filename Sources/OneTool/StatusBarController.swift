@@ -16,13 +16,10 @@ import Observation
 
     init(model: AppModel) {
         self.model = model
-        // The old SF Symbols placeholder is reset once; later symbol choices are intentional.
         let defaults = UserDefaults.standard
-        if !defaults.bool(forKey: "appearance.brandIconMigrated") {
-            defaults.set("", forKey: "appearance.icon")
-            defaults.set(true, forKey: "appearance.brandIconMigrated")
-        }
-        item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        // Retired, ambiguous presets return to the original 1Tool mark.
+        defaults.set(StatusIconSelection.sanitized(defaults.string(forKey: "appearance.icon")), forKey: "appearance.icon")
+        item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         super.init()
         item.autosaveName = "com.shopkivoo.onetool.status"
         item.behavior = []
@@ -87,8 +84,7 @@ import Observation
     }
     private func refreshAppearance() {
         panel.setAccessibilityTitle(L("1Tool Quick Panel"))
-        item.button?.image = BrandGlyph.image(active: model.awake.isActive,
-            showDot: UserDefaults.standard.object(forKey: "appearance.activeDot") as? Bool ?? true)
+        item.button?.image = BrandGlyph.image(active: model.awake.isActive)
         item.button?.toolTip = model.awake.isActive ? L("1Tool · Keeping Awake") : L("1Tool · Click for Quick Panel; right-click for menu")
         let scheme = UserDefaults.standard.string(forKey: "appearance.scheme") ?? "system"
         let appearance = scheme == "dark" ? NSAppearance(named: .darkAqua)

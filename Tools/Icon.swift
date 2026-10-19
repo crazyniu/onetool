@@ -71,8 +71,8 @@ try appIcon(1024).write(to: resources.appendingPathComponent("AppIcon-Default.pn
 let mark = png(width: 256, height: 256) { wrench(in: $0, color: .black) }
 try mark.write(to: resources.appendingPathComponent("logo.png"))
 for scale in [1, 2] {
-    let glyph = png(width: 26 * scale, height: 20 * scale) { rect in
-        let side = CGFloat(18 * scale)
+    let glyph = png(width: 22 * scale, height: 22 * scale) { rect in
+        let side = 19.5 * CGFloat(scale)
         wrench(in: NSRect(x: (rect.width - side) / 2, y: (rect.height - side) / 2, width: side, height: side), color: .black)
     }
     try glyph.write(to: output.deletingLastPathComponent().appendingPathComponent(scale == 1 ? "MenuBarIcon.png" : "MenuBarIcon@2x.png"))

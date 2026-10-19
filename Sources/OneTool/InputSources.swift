@@ -22,12 +22,17 @@ struct InputRule: Codable, Identifiable, Equatable {
     @ObservationIgnored private var sourceObserver: NSObjectProtocol?
     @ObservationIgnored private var pending: DispatchWorkItem?
 
-    init() {
-        let d = UserDefaults.standard
+    @ObservationIgnored private var restoringPreferences = true
+    @ObservationIgnored private let defaults: UserDefaults
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        let d = defaults
         enabled = d.bool(forKey: "input.enabled")
         fallback = d.string(forKey: "input.fallback") ?? ""
         clearCapsLock = d.object(forKey: "input.caps") as? Bool ?? true
         if let data = d.data(forKey: "input.rules"), let saved = try? JSONDecoder().decode([InputRule].self, from: data) { rules = saved }
+        restoringPreferences = false
         refresh()
         activation = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
@@ -88,7 +93,9 @@ struct InputRule: Codable, Identifiable, Equatable {
                                sourceID: fallback.isEmpty ? (sources.first?.id ?? "") : fallback))
     }
     private func save() {
-        let d = UserDefaults.standard
+        // Observation setters also run during initialization; finish reading before writing.
+        guard !restoringPreferences else { return }
+        let d = defaults
         d.set(enabled, forKey: "input.enabled"); d.set(fallback, forKey: "input.fallback")
         d.set(clearCapsLock, forKey: "input.caps"); d.set(try? JSONEncoder().encode(rules), forKey: "input.rules")
     }

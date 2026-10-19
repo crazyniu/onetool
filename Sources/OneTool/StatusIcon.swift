@@ -2,56 +2,43 @@
 // Copyright (C) 2026 Vorssaint; adapted for 1Tool.
 import AppKit
 
-// Same empty-name default, gallery, and invalid-name recovery as the reference project.
+// Curated for clear silhouettes at actual menu-bar size; the empty name is 1Tool's mark.
 enum StatusIconSelection {
-    static func sanitized(_ name: String?) -> String { name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "" }
-    static func toSave(typed: String?, opening: String, exists: (String) -> Bool) -> String {
-        let name = sanitized(typed)
-        return name.isEmpty || exists(name) ? name : opening
-    }
     static let gallery = [
-        "bolt.fill", "star.fill", "heart.fill", "flame.fill", "sparkles", "leaf.fill",
-        "drop.fill", "snowflake", "sun.max.fill", "moon.stars.fill", "cloud.fill", "mountain.2.fill",
-        "circle.fill", "square.fill", "triangle.fill", "diamond.fill", "hexagon.fill", "seal.fill",
-        "circle.lefthalf.filled", "circle.hexagongrid.fill", "infinity",
-        "command", "cpu.fill", "memorychip.fill", "gauge.with.dots.needle.67percent",
-        "fanblades.fill", "gearshape.fill", "terminal.fill", "waveform",
-        "wand.and.stars", "key.fill", "crown.fill", "gamecontroller.fill", "headphones",
-        "music.note", "paperplane.fill", "pawprint.fill", "cat.fill", "hare.fill", "tortoise.fill",
+        "", "gearshape.fill", "wrench.adjustable.fill", "hammer.fill", "screwdriver.fill", "paintbrush.pointed.fill", "puzzlepiece.fill", "shield.fill",
+        "cube.fill", "shippingbox.fill", "square.stack.fill", "square.on.square.fill", "rectangle.stack.fill", "square.grid.2x2.fill", "circle.grid.2x2.fill", "square.grid.3x3.fill",
+        "hexagon.fill", "diamond.fill", "seal.fill", "octagon.fill", "circle.lefthalf.filled", "square.lefthalf.filled", "triangle.lefthalf.filled", "pentagon.fill",
+        "curlybraces", "command", "option", "shift.fill", "arrow.up.arrow.down", "arrow.left.arrow.right", "arrow.triangle.branch", "arrow.triangle.swap",
     ]
-
+    static func sanitized(_ name: String?) -> String {
+        let name = name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return gallery.contains(name) ? name : ""
+    }
 }
 
 enum BrandGlyph {
     static let applicationIcon: NSImage = {
         Bundle.main.url(forResource: "AppIcon", withExtension: "icns").flatMap { NSImage(contentsOf: $0) } ?? NSImage()
     }()
-    static let pointSize = NSSize(width: 26, height: 20)
-    private static let symbolHeight: CGFloat = 16
-    private static let base: NSImage? = {
+    static let pointSize = NSSize(width: 22, height: 22)
+    private static let symbolHeight: CGFloat = 18
+    private static func base(in bundle: Bundle) -> NSImage? {
         let image = NSImage(size: pointSize)
         for resource in ["MenuBarIcon", "MenuBarIcon@2x"] {
-            guard let url = Bundle.main.url(forResource: resource, withExtension: "png"),
-                  let data = try? Data(contentsOf: url),
-                  let rep = NSBitmapImageRep(data: data)
-            else { continue }
+            guard let url = bundle.url(forResource: resource, withExtension: "png"),
+                  let data = try? Data(contentsOf: url), let rep = NSBitmapImageRep(data: data) else { continue }
             rep.size = pointSize
             image.addRepresentation(rep)
         }
         guard !image.representations.isEmpty else { return nil }
         image.isTemplate = true
         return image
-    }()
-
-    /// The symbol named in the menu bar settings, empty for the mark.
+    }
     static var chosenSymbolName: String {
         StatusIconSelection.sanitized(UserDefaults.standard.string(forKey: "appearance.icon"))
     }
-
-    /// What every state starts from: the chosen symbol, or the bundled mark
-    /// when none is chosen or this Mac has no symbol by that name.
-    static func mark(symbolName: String = BrandGlyph.chosenSymbolName) -> NSImage? {
-        customMark(named: symbolName) ?? base
+    static func mark(symbolName: String = chosenSymbolName, bundle: Bundle = .main) -> NSImage? {
+        customMark(named: StatusIconSelection.sanitized(symbolName)) ?? base(in: bundle)
     }
 
     /// A system symbol on the canvas the active symbols use, or nil when
@@ -62,7 +49,7 @@ enum BrandGlyph {
         return fixedSizeSymbol(named: name)
     }
 
-    private static func fixedSizeSymbol(named name: String, drop: CGFloat = 0) -> NSImage? {
+    private static func fixedSizeSymbol(named name: String) -> NSImage? {
         guard let symbol = NSImage(systemSymbolName: name, accessibilityDescription: nil)?
             .withSymbolConfiguration(.init(pointSize: 15, weight: .semibold)),
               symbol.size.width > 0,
@@ -72,12 +59,13 @@ enum BrandGlyph {
         let scale = min(symbolHeight / ink.height, (pointSize.width - 2) / ink.width)
         let drawSize = NSSize(width: symbol.size.width * scale,
                               height: symbol.size.height * scale)
-        // Offsets used to center the ink rather than the padded box.
+        guard ink.width * scale >= 8, ink.height * scale >= 14 else { return nil }
+        // Center visible ink rather than the symbol's padded box.
         let inkOrigin = NSPoint(x: ink.minX * scale, y: ink.minY * scale)
         let inkSize = NSSize(width: ink.width * scale, height: ink.height * scale)
         let image = NSImage(size: pointSize, flipped: false) { rect in
             let target = NSRect(x: rect.midX - inkOrigin.x - inkSize.width / 2,
-                                y: rect.midY - inkOrigin.y - inkSize.height / 2 - drop,
+                                y: rect.midY - inkOrigin.y - inkSize.height / 2,
                                 width: drawSize.width,
                                 height: drawSize.height)
             symbol.draw(in: target, from: .zero, operation: .sourceOver, fraction: 1)
@@ -124,16 +112,17 @@ enum BrandGlyph {
     }
 
 
-    static func image(active: Bool, showDot: Bool) -> NSImage? {
-        guard let source = mark()?.copy() as? NSImage else { return nil }
-        guard active && showDot else { source.isTemplate = true; return source }
-        let image = NSImage(size: NSSize(width: pointSize.width + 6, height: pointSize.height), flipped: false) { _ in
-            source.draw(in: NSRect(origin: .zero, size: pointSize))
-            NSColor.black.setFill()
-            NSBezierPath(ovalIn: NSRect(x: pointSize.width + 1, y: 8, width: 4, height: 4)).fill()
+    static func image(active: Bool, bundle: Bundle = .main) -> NSImage? {
+        guard let source = mark(bundle: bundle) else { return nil }
+        guard active else { return source }
+        let image = NSImage(size: pointSize, flipped: false) { _ in
+            let bounds = NSRect(origin: .zero, size: pointSize)
+            source.draw(in: bounds)
+            NSColor.systemGreen.setFill()
+            bounds.fill(using: .sourceIn)
             return true
         }
-        image.isTemplate = true
+        image.isTemplate = false
         return image
     }
 }

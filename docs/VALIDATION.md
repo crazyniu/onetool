@@ -1,5 +1,26 @@
 # Validation
 
+## Settings and icon follow-up — October 19, 2026
+
+| Check | Status | Evidence |
+| --- | --- | --- |
+| Local app build | PASS | Apple Silicon build; installed binary matches the built binary SHA-256; `codesign --verify --deep --strict` passes |
+| Core checks | PASS | `./test.sh`: 133 checks, including every retained icon's rendering, green active silhouette, input-settings restoration and per-app edits/removals |
+| Input rules in the installed app | PASS | Add TextEdit through the app picker, change its source, quit and reopen: rule and edited choice remain. Remove it, quit and reopen: rule stays removed. The test rule was cleaned up |
+| Delete rule without crashing | PASS | Reproduced an exclusivity conflict caused by reading a bound row inside an array mutation; capture the row identifier first. Native UI deletion succeeds and the process remains alive |
+| Icon grid and selected text | PASS | Installed app shows exactly four rows of eight icons with aligned centers; General's label and icon use the same pink accent. Updated `images/appearance.png` from the installed app |
+| Consistent app artwork | PASS | Host and Finder extension contain identical wrench ICNS files; extension declares that icon. Finder Applications and app sidebar show the blue wrench; old `BrandMark.png` is removed by clean build and replacement |
+| Menu bar image size and active color | PASS | 22×22-point image canvas, at most 20×18-point visible symbol, minimum 8-point ink width and 14-point ink height; AppKit square status item. All 32 choices retain their silhouette and render entirely green while active, without a dot |
+| Desktop menu bar pixel capture | NOT RUN | Native SystemUIServer access timed out. Image-rendering checks and keep-awake assertions passed; a screenshot of the actual desktop menu bar is not claimed |
+| Menu bar process and awake session | PASS | Installed process reports `UIElement`; real system/display sleep assertions are held; user's indefinite session restored after replacement |
+| Build script checks | PASS | `bash -n`, ShellCheck and `git diff --check` |
+| New DMG / release | WAIVED | User requested local application replacement and code submission only; no packaging command or version tag is used, and the commit skips Actions |
+| Fresh Intel and physical hardware acceptance | NOT RUN | This follow-up builds locally for Apple Silicon; hardware brightness/backlight behavior and the prior universal release baseline below were not retested |
+
+The startup bug saved defaults while still loading them, overwriting unread input rules. Loading now completes before saving is allowed. Rules already erased by the old build must be added again.
+
+## Previous distribution baseline — commit 3817505
+
 Current GitHub delivery checks, October 19, 2026. Local environment: Apple Silicon, macOS 27.0.1, Xcode 27.1. These results apply to the GitHub edition.
 
 | Check | Status | Evidence |

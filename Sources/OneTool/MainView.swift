@@ -55,7 +55,7 @@ struct MainView: View {
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 10).padding(.vertical, 9)
-            .foregroundStyle(Color.primary)
+            .foregroundStyle(model.page == page ? accent : Color.primary)
             .background(model.page == page ? accent.opacity(0.11) : .clear, in: RoundedRectangle(cornerRadius: 8))
             .contentShape(Rectangle())
         }.buttonStyle(.plain).accessibilityAddTraits(model.page == page ? .isSelected : [])
@@ -270,7 +270,7 @@ struct InputPage: View {
                     Text(rule.name).lineLimit(1)
                     Spacer(minLength: 8)
                     sourcePicker(LF("%@ Input Source", rule.name), value: $rule.sourceID)
-                    Button { input.rules.removeAll { $0.id == rule.id } } label: { Image(systemName: "minus.circle") }
+                    Button { [id = rule.id] in input.rules.removeAll { $0.id == id } } label: { Image(systemName: "minus.circle") }
                         .buttonStyle(.borderless).help(LF("Remove %@", rule.name)).accessibilityLabel(LF("Remove %@", rule.name))
                 }
                 if rule.id != input.rules.last?.id { Divider() }
@@ -300,8 +300,6 @@ struct AppearancePage: View {
     @Environment(\.toolAccent) private var accent
     @Bindable var model: AppModel
     @AppStorage("appearance.icon") private var icon = ""
-    @State private var editingIconName = false
-    @AppStorage("appearance.activeDot") private var activeDot = true
     var body: some View {
         LanguageControls()
         AppearanceControls()
@@ -312,18 +310,13 @@ struct AppearancePage: View {
                 Image(nsImage: BrandGlyph.mark() ?? NSImage()).renderingMode(.template).frame(width: 40, height: 28)
                     .background(Color(nsColor: .windowBackgroundColor), in: RoundedRectangle(cornerRadius: 6))
             }
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 42, maximum: 48), spacing: 8)], alignment: .leading, spacing: 8) {
-                iconCell(name: "", title: L("Default Icon"))
-                ForEach(StatusIconSelection.gallery.filter { NSImage(systemSymbolName: $0, accessibilityDescription: nil) != nil }, id: \.self) { name in
-                    iconCell(name: name, title: name)
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 8), alignment: .leading, spacing: 8) {
+                ForEach(StatusIconSelection.gallery, id: \.self) { name in
+                    iconCell(name: name, title: name.isEmpty ? L("Default Icon") : name)
                 }
             }
-            Button(L("Other Icon…")) { editingIconName = true }.font(.callout)
-            HelpText(L("Choose an icon or enter an SF Symbol name. Leave it empty to restore the wrench."))
-            Divider()
-            SettingToggle(title: L("Show Activity Dot While Keeping Awake"), value: $activeDot)
+            HelpText(L("Icons are sized for the menu bar. Green means Keep Awake is on."))
         }
-        .popover(isPresented: $editingIconName) { IconNameEditor() }
         ToolSection(title: L("Startup")) {
             SettingToggle(title: L("Launch at Login"), value: Binding(get: { model.loginStatus == .enabled || model.loginStatus == .requiresApproval }, set: { model.setLogin($0) }))
             if model.loginStatus == .requiresApproval {
@@ -345,7 +338,7 @@ struct AppearancePage: View {
             VStack(spacing: 7) {
                 Image(nsImage: BrandGlyph.mark(symbolName: name) ?? NSImage())
                     .renderingMode(.template).frame(height: 25)
-            }.frame(maxWidth: .infinity).frame(height: 42)
+            }.frame(maxWidth: .infinity).frame(height: 44)
                 .foregroundStyle(icon == name ? accent : .primary)
                 .background(icon == name ? accent.opacity(0.12) : Color(nsColor: .windowBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
                 .overlay(alignment: .topTrailing) {
@@ -355,26 +348,4 @@ struct AppearancePage: View {
 
     }
 
-}
-
-private struct IconNameEditor: View {
-    @Environment(\.dismiss) private var dismiss
-    @AppStorage("appearance.icon") private var savedName = ""
-    @State private var draft = ""
-    @State private var openingName = ""
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(L("Other Icon")).font(.headline)
-            TextField(L("Symbol name, such as bolt.fill"), text: $draft).textFieldStyle(.roundedBorder)
-                .onSubmit { dismiss() }
-            HelpText(L("Leave empty for the default icon. An invalid name restores your previous selection."))
-            HStack { Spacer(); Button(L("Done")) { dismiss() }.keyboardShortcut(.defaultAction) }
-        }.padding(20).frame(width: 300)
-            .onAppear { openingName = savedName; draft = savedName }
-            .onChange(of: draft) {
-                savedName = StatusIconSelection.toSave(typed: draft, opening: openingName) {
-                    NSImage(systemSymbolName: $0, accessibilityDescription: nil) != nil
-                }
-            }
-    }
 }

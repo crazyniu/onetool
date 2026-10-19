@@ -1,6 +1,59 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "Icons are sized for the menu bar. Green means Keep Awake is on.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Symbole in Menüleistengröße. Grün bedeutet: Der Mac bleibt wach."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Icons are sized for the menu bar. Green means Keep Awake is on."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Iconos ajustados a la barra de menús. El verde indica que Mantener activo está encendido."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Icônes adaptées à la barre des menus. Le vert indique que le maintien en éveil est actif."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メニューバーに適したサイズです。緑色はスリープ防止が有効です。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "메뉴 막대에 맞춘 아이콘입니다. 녹색은 잠자기 방지가 켜져 있음을 나타냅니다."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "图标按状态栏尺寸绘制，绿色表示已开启防休眠。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "圖示按狀態列尺寸繪製，綠色表示已開啟防止休眠。"
+          }
+        }
+      }
+    },
     "%@ Brightness": {
       "comment": "Accessibility label; placeholder is the connected display name.",
       "extractionState": "manual",

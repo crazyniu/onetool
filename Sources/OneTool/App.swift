@@ -67,6 +67,7 @@ enum ToolPage: String, CaseIterable, Identifiable {
 @MainActor final class AppDelegate: NSObject, NSApplicationDelegate {
     private var status: StatusBarController?
     func applicationDidFinishLaunching(_ notification: Notification) {
+        NSApp.applicationIconImage = BrandGlyph.applicationIcon
         NSApp.setActivationPolicy(.accessory)
         status = StatusBarController(model: AppModel.shared)
     }

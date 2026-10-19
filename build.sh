@@ -5,6 +5,8 @@ mkdir -p build
 ARCHS="${ARCHS:-$(uname -m)}"
 SDK="$(xcrun --show-sdk-path)"
 APP="$PWD/build/1Tool.app"
+# Start clean so retired artwork and resources cannot survive incremental builds.
+rm -rf "$APP"
 EXT="$APP/Contents/PlugIns/OneToolFinder.appex"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$EXT/Contents/MacOS"
 SOURCES=(Sources/OneTool/*.swift Sources/Shared/*.swift)
@@ -42,6 +44,7 @@ if [[ ! -f build/MenuBarIcon.png || ! -f build/AppIcon.icns || Tools/Icon.swift 
     xcrun swift Tools/Icon.swift build/AppIcon.iconset
 fi
 cp build/AppIcon.icns build/MenuBarIcon.png build/MenuBarIcon@2x.png "$APP/Contents/Resources/"
+cp build/AppIcon.icns "$EXT/Contents/Resources/"
 IDENTITY="${CODE_SIGN_IDENTITY:-$(security find-identity -v -p codesigning | sed -n 's/.*"\(Apple Development:.*\)"/\1/p' | head -1)}"
 IDENTITY="${IDENTITY:--}"
 SIGN_FLAGS=(--force --options runtime --sign "$IDENTITY")
@@ -59,7 +62,7 @@ if [[ "${1:-}" == "--install" ]]; then
         BACKUP="$PWD/build/1Tool-previous-$(date +%Y%m%d-%H%M%S).app"
         ditto "$DEST" "$BACKUP"
     fi
-    ditto "$APP" "$DEST"
+    rsync -a --delete "$APP/" "$DEST/"
     /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$DEST"
     pluginkit -a "$DEST/Contents/PlugIns/OneToolFinder.appex"
     # Reload only this extension after replacing a running development build.

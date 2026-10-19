@@ -12,8 +12,8 @@ A small, native macOS utility for everyday desktop tasks. Built with SwiftUI and
 - **Finder Actions:** create files from templates, open favorite folders, copy paths, open folders in terminals or editors, and toggle hidden files.
 - **Keyboard Backlight:** brightness, quick levels and ambient-light adjustment on supported Macs.
 - **Display Brightness:** independent built-in / external display controls, DDC/CI support, and software dimming that restores the original curves on quit.
-- **Input Sources:** a global default and per-app rules, with optional Caps Lock clearing. Rules are off by default.
-- **Make it yours:** light / dark / automatic themes, nine accents, a customizable menu bar icon, and optional launch at login.
+- **Input Sources:** a global default and per-app rules, with optional Caps Lock clearing. Rules save automatically and survive restarting the app; they are off by default.
+- **Make it yours:** light / dark / automatic themes, nine accents, 32 menu bar icon choices in a four-row grid, and optional launch at login. The active Keep Awake icon turns green.
 
 English, Simplified Chinese, Traditional Chinese, Japanese, Korean, French, German and Spanish are included. Choose a language in General or follow the system. Standard macOS dialogs follow the system language.
 

@@ -11,12 +11,52 @@ import AppKit
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("onetool-checks-" + UUID().uuidString)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: dir) }
-        let symbolExists: (String) -> Bool = { NSImage(systemSymbolName: $0, accessibilityDescription: nil) != nil }
-        check(StatusIconSelection.toSave(typed: "  \n", opening: "star.fill", exists: symbolExists) == "", "empty icon name restores bundled logo")
-        check(StatusIconSelection.toSave(typed: " star.fill \n", opening: "", exists: symbolExists) == "star.fill", "valid icon name is trimmed and saved")
-        check(StatusIconSelection.toSave(typed: "onetool.invalid.symbol", opening: "heart.fill", exists: symbolExists) == "heart.fill", "invalid icon name preserves opening selection")
-        check(Set(StatusIconSelection.gallery).count == 40, "reference icon gallery contains 40 unique choices")
-        check(BrandGlyph.customMark(named: "star.fill")?.size == BrandGlyph.pointSize, "chosen symbol uses the reference icon canvas")
+        let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+        let appBundle = Bundle(url: root.appendingPathComponent("build/1Tool.app"))!
+        let finderBundle = Bundle(url: appBundle.bundleURL.appendingPathComponent("Contents/PlugIns/OneToolFinder.appex"))!
+        check(StatusIconSelection.sanitized("flame.fill").isEmpty && StatusIconSelection.sanitized("cloud.fill").isEmpty, "legacy generic symbols migrate to the original wrench")
+        check(StatusIconSelection.sanitized(" hexagon.fill ") == "hexagon.fill" && Set(StatusIconSelection.gallery).count == 32, "32 curated choices fill four aligned rows of eight")
+        check(BrandGlyph.customMark(named: "minus") == nil, "reject a mark that becomes too short at menu-bar size")
+        let appArtwork = try Data(contentsOf: appBundle.url(forResource: "AppIcon", withExtension: "icns")!)
+        let finderArtwork = try Data(contentsOf: finderBundle.url(forResource: "AppIcon", withExtension: "icns")!)
+        check(finderArtwork == appArtwork, "host and Finder extension carry identical app artwork")
+        check(finderBundle.object(forInfoDictionaryKey: "CFBundleIconFile") as? String == "AppIcon", "Finder extension declares the shared app icon")
+        let savedIcon = UserDefaults.standard.object(forKey: "appearance.icon")
+        defer {
+            if let savedIcon { UserDefaults.standard.set(savedIcon, forKey: "appearance.icon") }
+            else { UserDefaults.standard.removeObject(forKey: "appearance.icon") }
+        }
+        func pixels(_ image: NSImage) -> NSBitmapImageRep {
+            let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 44, pixelsHigh: 44,
+                bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
+            NSGraphicsContext.saveGraphicsState()
+            NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+            image.draw(in: NSRect(x: 0, y: 0, width: 44, height: 44))
+            NSGraphicsContext.restoreGraphicsState()
+            return rep
+        }
+        for style in StatusIconSelection.gallery {
+            UserDefaults.standard.set(style, forKey: "appearance.icon")
+            let idleIcon = BrandGlyph.image(active: false, bundle: appBundle)!
+            let activeIcon = BrandGlyph.image(active: true, bundle: appBundle)!
+            check((style.isEmpty ? idleIcon.representations.count == 2 : BrandGlyph.customMark(named: style) != nil) && activeIcon.size == idleIcon.size && activeIcon.size == BrandGlyph.pointSize && !activeIcon.isTemplate && idleIcon.isTemplate, "menu icon is legible on a stable canvas without a dot: " + style)
+            let activePixels = pixels(activeIcon), idlePixels = pixels(idleIcon)
+            var greenPixels = 0, wrongColorPixels = 0
+            var sameSilhouette = true
+            for y in 0..<44 {
+                for x in 0..<44 {
+                    let color = activePixels.colorAt(x: x, y: y)!.usingColorSpace(.deviceRGB)!
+                    let idleAlpha = idlePixels.colorAt(x: x, y: y)!.alphaComponent
+                    sameSilhouette = sameSilhouette && abs(color.alphaComponent - idleAlpha) < 0.05
+                    if color.alphaComponent > 0.5 {
+                        if color.greenComponent > color.redComponent && color.greenComponent > color.blueComponent { greenPixels += 1 }
+                        else { wrongColorPixels += 1 }
+                    }
+                }
+            }
+            check(sameSilhouette && greenPixels > 20 && wrongColorPixels == 0, "active icon is entirely green and preserves the idle silhouette: " + style)
+        }
         check(SuperRightClickFiles.validName("你好 ' $().txt"), "valid Unicode file name")
         for bad in ["", ".", "..", "a/b", "a:b", "a\0b", String(repeating: "a", count: 256)] {
             check(!SuperRightClickFiles.validName(bad), "reject invalid file name")
@@ -37,14 +77,11 @@ import AppKit
         let template = SuperRightClickTemplatePreset.json.entry
         let templateData = try SuperRightClickTemplates.data(for: template, resourceDirectory: nil)
         check(templateData == Data("{}\n".utf8), "JSON template contents")
-        let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
         check(AppLanguage.resolve("system", preferred: ["de-DE"]) == "de", "language follows regional system preference")
         check(AppLanguage.resolve("system", preferred: ["zh-TW"]) == "zh-Hant", "traditional Chinese system language")
         check(AppLanguage.resolve("system", preferred: ["zh-CN"]) == "zh-Hans", "simplified Chinese system language")
         check(AppLanguage.resolve("ja", preferred: ["de-DE"]) == "ja", "manual language overrides system")
         check(AppLanguage.resolve("invalid", preferred: ["it-IT"]) == "en", "unsupported language falls back to English")
-        let appBundle = Bundle(url: root.appendingPathComponent("build/1Tool.app"))!
-        let finderBundle = Bundle(url: appBundle.bundleURL.appendingPathComponent("Contents/PlugIns/OneToolFinder.appex"))!
         let catalog = try JSONSerialization.jsonObject(with: Data(contentsOf: root.appendingPathComponent("Resources/Localizable.xcstrings"))) as! [String: Any]
         let entries = catalog["strings"] as! [String: [String: Any]]
         for language in AppLanguage.supported {
@@ -75,6 +112,20 @@ import AppKit
         check(RightClick.shellQuote("a'b") == "'a'\\''b'", "shell quote apostrophes")
         check(RightClick.appleScriptLiteral("a\"b\\c\n") == "\"a\\\"b\\\\c\\n\"", "AppleScript literal escaping")
         let rule = InputRule(id: "test.app", name: "Test", path: "/Applications/Test.app", sourceID: "zh")
+        let inputSuite = "onetool-input-checks-" + UUID().uuidString
+        let inputDefaults = UserDefaults(suiteName: inputSuite)!
+        defer { inputDefaults.removePersistentDomain(forName: inputSuite) }
+        inputDefaults.set(true, forKey: "input.enabled")
+        inputDefaults.set("zh", forKey: "input.fallback")
+        inputDefaults.set(false, forKey: "input.caps")
+        inputDefaults.set(try JSONEncoder().encode([rule]), forKey: "input.rules")
+        let restoredInputs = InputSources(defaults: inputDefaults)
+        check(restoredInputs.enabled && restoredInputs.fallback == "zh" && !restoredInputs.clearCapsLock && restoredInputs.rules == [rule], "startup restores all saved input settings without overwriting them")
+        restoredInputs.rules[0].sourceID = "en"
+        let editedInputs = InputSources(defaults: inputDefaults)
+        check(editedInputs.rules.first?.sourceID == "en", "edited per-app input source survives restart")
+        restoredInputs.rules.removeAll()
+        check(InputSources(defaults: inputDefaults).rules.isEmpty, "removed per-app rule stays removed after restart")
         check(InputSources.target(bundleID: "test.app", rules: [rule], fallback: "en", available: ["zh", "en"]) == "zh", "per-app input source priority")
         check(InputSources.target(bundleID: "other", rules: [rule], fallback: "en", available: ["zh", "en"]) == "en", "global input source fallback")
         check(InputSources.target(bundleID: "test.app", rules: [rule], fallback: "en", available: ["en"]) == nil, "unavailable source never switches to unrelated fallback")
