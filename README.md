@@ -27,7 +27,7 @@ English, Simplified Chinese, Traditional Chinese, Japanese, Korean, French, Germ
 
 Download a DMG from [Releases](https://github.com/natefox2017/onetool/releases), open it, and drag **1Tool** into **Applications**. Requires macOS 14 or later; release builds support Apple Silicon and Intel Macs. An empty Releases page means no distribution release has been published yet.
 
-The release workflow signs both the app and DMG with **Developer ID Application**, submits the DMG to Apple for notarization, staples the accepted ticket and verifies Gatekeeper before publishing it. Development artifacts from ordinary CI runs are explicitly labeled and do not carry a trusted distribution signature.
+DMGs are packaged without an Apple signing certificate or notarization. The app and Finder extension use certificate-free ad-hoc signatures. macOS may block the first launch; see [opening a downloaded build](RELEASING.md#opening-a-downloaded-build).
 
 ## Build from source
 
@@ -44,11 +44,11 @@ ARCHS="arm64 x86_64" ./build.sh    # universal binary
 
 Local builds use an available Apple Development identity, or ad-hoc signing when none exists. Set `CODE_SIGN_IDENTITY` to choose explicitly. A local development signature does not imply notarization. `./test.sh --hardware` additionally changes and restores real input, backlight and display state; run it only on a Mac you control.
 
-## Automatic signed DMG builds
+## Automatic DMG builds
 
-The [signed release workflow](.github/workflows/release.yml) runs on pushes to `main`, version tags (`v*`) and manual dispatches. Main/manual runs upload the signed DMG as an artifact; version tags also publish it to GitHub Releases. Tags must match the version in `Resources/Info.plist`.
+The [Build DMG workflow](.github/workflows/release.yml) runs on pushes to `main`, version tags (`v*`) and manual dispatches. Main/manual runs upload the **unsigned-dmg** artifact; version tags also publish direct downloads in GitHub Releases. Tags must match the version in `Resources/Info.plist`.
 
-Five Actions secrets are required. See [RELEASING.md](RELEASING.md) for setup and local commands. Missing credentials stop the signing job; it never substitutes a development or ad-hoc signature for a release signature.
+No Apple certificate or repository Secrets are required. See [RELEASING.md](RELEASING.md) for local packaging and checksum verification.
 
 ## First use and compatibility
 
@@ -57,6 +57,8 @@ Enable Finder Actions, then allow the bundled Finder extension in System Setting
 Enable DDC/CI on external displays. Hardware brightness and keyboard backlight depend on private macOS interfaces and can vary with the Mac, operating system, monitor and adapter. Unsupported hardware is reported in the app; software dimming is available for compatible displays. macOS still controls lid closure, shutdown and forced sleep.
 
 Enable the input sources you need in System Settings before creating rules. Avoid enabling two automatic input-switching utilities together.
+
+1Tool runs in the menu bar and does not show a Dock icon. Open its settings from the menu bar panel or the status icon's right-click menu. Closing the settings window keeps the app running.
 
 ## Contributing and license
 

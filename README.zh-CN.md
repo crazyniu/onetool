@@ -24,6 +24,8 @@ ARCHS="arm64 x86_64" ./build.sh
 
 源码构建需要完整 Xcode 26+。首次使用 Finder 操作时需启用 Finder 扩展；输入法规则默认关闭；外接显示器需支持并开启 DDC/CI。硬件接口兼容性取决于 Mac、系统版本、显示器和连接方式。退出会结束防休眠并恢复软件调暗。
 
-GitHub 签名工作流会在 main 推送、版本标签或手动运行时自动打包：Developer ID 签名应用和 DMG，完成 Apple 公证、票据装订与 Gatekeeper 检查后上传产物。版本标签同时创建 Release。首次配置需要五个仓库 Secrets，见 [RELEASING.md](RELEASING.md)。开发构建使用本机开发签名或临时签名，不能替代正式分发签名。
+应用仅在菜单栏显示图标，Dock 中不显示。通过菜单栏面板或图标右键菜单打开设置，关闭设置窗口后继续运行。
+
+GitHub 工作流会在 main 推送、版本标签或手动运行时自动生成通用 DMG，无需 Apple 证书或仓库 Secrets。main 构建提供 Actions 产物，版本标签同时创建带直接下载链接的 Release。应用与 Finder 扩展使用不依赖证书的临时签名，DMG 未经 Apple 签名或公证，首次启动可能需要在系统隐私与安全设置中允许。详见 [RELEASING.md](RELEASING.md)。
 
 GPL-3.0-or-later；上游来源和版权见 [NOTICE.md](NOTICE.md)。欢迎提交问题和 Pull Request。

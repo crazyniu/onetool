@@ -12,6 +12,7 @@
 <key>LSMinimumSystemVersion</key><string>14.0</string>
 <key>CFBundleDevelopmentRegion</key><string>en</string>
 <key>NSHighResolutionCapable</key><true/>
+<key>LSUIElement</key><true/>
 <key>NSAppleEventsUsageDescription</key><string>1Tool opens folders in your chosen terminal and toggles hidden files in Finder when you choose these actions.</string>
 <key>LSApplicationCategoryType</key><string>public.app-category.utilities</string>
 <key>NSPrincipalClass</key><string>NSApplication</string>
