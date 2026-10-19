@@ -1,77 +1,18 @@
-# 验证记录
+# Validation
 
-日期：2026-10-19，Asia/Taipei。环境：Apple Silicon、macOS 27.0.1、Xcode 27.1。
+Current GitHub delivery checks, October 19, 2026. Local environment: Apple Silicon, macOS 27.0.1, Xcode 27.1. These results apply to the GitHub edition.
 
-状态仅对应以下证据；构建与源码对齐不替代设备验证。
-
-| 项目 | 状态 | 实际证据 |
+| Check | Status | Evidence |
 | --- | --- | --- |
-| 主应用和 Finder 扩展构建 | PASS | build.sh；本机 Apple Development 签名；codesign --verify --deep --strict |
-| Swift Package 开发入口 | PASS | swift build，主应用开发编译通过 |
-| 应用身份 | PASS | 已安装 /Applications/1Tool.app；CFBundleIdentifier=com.shopkivoo.onetool；窗口/菜单/显示名称 1Tool |
-| 核心检查 | PASS | test.sh：36 项，含路径/文件名、独占创建、符号链接防覆盖、模板、Office 真文档、IPC、转义、输入规则、DDC 报文/校验/路由和真实 IOPM 定时释放 |
-| 硬件补充检查 | PASS | test.sh --hardware：累计 40 项；ABC 实际切换及恢复；键盘实际写入0.04并读回；逐屏 gamma 调暗、另一屏不变、精确恢复 |
-| 防止休眠界面主流程 | PASS | 原生界面开始/结束、倒计时、配置禁用状态；pmset 显示该进程的系统/屏幕断言；结束后消失 |
-| 内置屏幕亮度 | PASS | 界面100%→96%，刷新实际读回0.9599999785；恢复100% |
-| GX400WQR 外接屏幕 | PASS | DDC 界面29%→31%，刷新仍31%；内置屏幕保持100%；恢复29% |
-| 键盘背光界面 | PASS | 环境光自动调节开启时写入受抑制；手动调节关闭自动调节后25%写入并刷新读回25%；恢复0%和自动调节 |
-| 默认输入法 | PASS | 全局/专属/跟随系统/不可用规则检查；真实延迟切换到ABC并恢复；新应用默认未启用，避免与其他自动切换工具冲突 |
-| 右键代码迁移 | PASS | FinderSync.swift 仅类名适配后与参考原文件一致；模板实现一致；Office 模板二进制一致；服务/软件检测/禁用与隐藏文件路径直接移植，见PORTING.md |
-| Finder 菜单展示 | PASS | 当前 Finder 真实菜单显示四组、TXT/Markdown/JSON、常用目录、Terminal/iTerm2/Visual Studio Code/Xcode与隐藏文件；菜单文件与原项目一致 |
-| 文件创建动作 | PASS | 最终服务通过真实主应用IPC弹出原版Untitled.json对话框；原生界面创建 /tmp/onetool-finder-smoke/ported.json 与 Lexar 测试目录 external-port.json；内容均为 {} 加换行。迁移前另验证过真实Finder菜单到文件创建全流程 |
-| 复制路径动作 | PASS | 真实主应用IPC执行，剪贴板内容精确等于测试目录；检查后恢复原剪贴板 |
-| 终端目录打开动作 | PASS | 系统设置确认1Tool→终端自动化开启；真实主应用IPC执行；Terminal子shell工作目录分别为本机测试目录和包含空格、单引号的Lexar目录。终端窗口自动读取受工具限制，以进程工作目录核验 |
-| 隐藏文件动作 | PASS | 真实主应用IPC调用原项目逻辑，AppleShowAllFiles由未设置/false→true→false；Finder重启；恢复原显示状态。该路径不需System Events或辅助功能 |
-| 外观/图标 | PASS | 当前为原创竖直扳手 Logo + 原项目40个图库符号及自定义名称；空值默认、有效/无效名称、图标画布检查通过；浅色/深色/自动与主色调选择已实际操作，退出重开保留 |
-| 登录启动、真实重启、拔插屏幕 | NOT RUN | 实现使用SMAppService；未为了验收更改登录启动或进行实际关机、拔插 |
-| 其他显示器、Intel、macOS14–26 | NOT RUN | 当前设备之外的兼容性未作真机验证 |
-| 发布/公证/App Store | NOT RUN | 用户要求本机独立项目；未进行对外发布 |
+| Universal app and Finder extension | PASS | `ARCHS="arm64 x86_64" ./build.sh`; both executables contain arm64 and x86_64 slices |
+| Core checks | PASS | `./test.sh`: 66 checks, including file safety, templates, localization, input selection logic, DDC parsing and real timed IOPM assertion release |
+| Installed app | PASS | Local app updated; `codesign --verify --deep --strict` succeeds; all six settings pages remain available |
+| README screenshots | PASS | Captured from the installed full app using native UI tools; Keep Awake, Finder Actions and General |
+| Dock artwork fix | PARTIAL | Launch now assigns the bundled blue wrench to the application icon; installed ICNS verified. A separate Dock visual capture was unavailable |
+| DMG creation and integrity | PASS | Native disk image created; image checksum validated; mounted app signature and universal slices verified; Applications shortcut present |
+| Release guard | PASS | `Tools/package-dmg.sh --release` rejects a missing Developer ID identity before producing a release image |
+| Shell and workflow checks | PASS | `bash -n`, ShellCheck and actionlint |
+| Fresh hardware coverage | NOT RUN | No new physical brightness, keyboard-backlight or input-switching acceptance claimed by this packaging change |
+| Trusted distribution signing / notarization | BLOCKED | Requires the five repository Secrets documented in RELEASING.md; this Mac currently has an Apple Development identity, not Developer ID Application |
 
-UI：五个工具和外观页面均已打开检查，关键滑块、开关、菜单与文件对话框通过原生工具验证。设置保持独立设计；Finder菜单使用原代码。
-
-系统权限：可移动宗卷访问和终端自动化在系统设置中确认开启。系统通知中心与终端窗口不允许桌面工具自动读取，未绕过该限制。原项目的隐藏文件实现已移植，因此无需增加辅助功能或System Events权限。
-
-测试仅在新项目build目录和独立/tmp目录创建文件；原项目代码保持未改动。旧工具的输入法配置未更改。
-
-
-## 状态栏与 UI 统一补充验收
-
-本次按用户追加要求，使用 Product Design audit 对六页逐页原生截图审查。原始截图、每页问题和优化后截图保存在 `build/ui-audit/report.md`。
-
-| 项目 | 状态 | 证据 |
-| --- | --- | --- |
-| 最新本机构建、签名与安装 | PASS | build.sh 无警告；已替换 /Applications/1Tool.app；codesign --verify --deep --strict |
-| 核心检查 | PASS | test.sh 43项；增加图标默认/名称恢复和画布检查，以及真实8小时deadline和重新配置保持时长检查 |
-| 设置页去重复名称 | PASS | 标题栏隐藏文字、侧栏底部无名称/版本；左上角仅一个蓝底白色竖直扳手Logo |
-| 逐页视觉检查 | PASS | 防止休眠、超级右键、键盘背光、双屏亮度、默认输入法、外观与启动六页的原生截图；统一24点页面内距、16点组距、14点组内距、10点行距 |
-| 图标网格 | PASS | 紧凑自适应42–48点网格；默认项仅图形，悬停名称与辅助功能名称保留 |
-| 定时档位 | PASS | 主设置与面板显示30分钟、1/2/4/8小时、∞；实际点击8小时后显示479:59，主设置高亮8小时；结束恢复 |
-| 无限防休眠 | PASS | 实际点击面板∞，主应用显示“保持到你手动结束或退出1Tool”；pmset显示该进程的系统/屏幕休眠断言；主设置∞模式实际选中、开启并结束 |
-| 面板背景与高度 | PASS | 原生截图显示尖角和主体同一不透明背景；内容测量驱动高度，当前双屏和键盘内容贴合底部；屏幕高度上限后滚动 |
-| 面板 Esc 关闭 | PASS | 最终安装版面板按 Escape 后消失，返回主设置窗口 |
-| 设置入口 | PASS | 面板“更换图标”实际打开外观设置；新面板使用同一打开窗口回调 |
-| 物理右键事件到原生NSMenu的桌面自动化验收 | NOT RUN | 已实现左右鼠标分发和原生菜单，桌面工具未捕获状态栏原生菜单；不把菜单源码与构建当作该路径验收 |
-| VoiceOver、所有键盘路径、其他系统版本和极端屏幕布局 | NOT RUN | 不由截图推断完整辅助功能或跨设备兼容 |
-
-原显示器、键盘、输入法与Finder底层有效PASS沿用上表记录，本次未重复全套硬件扰动。应用图标为Tools/Icon.swift绘制的原创竖直扳手，不包含参考项目品牌资产。
-
-
-## Flat branding and eight-language support
-
-2026-10-19 follow-up. User deferred Mac App Store/distribution work and requested the complete functionality first.
-
-| Item | Status | Evidence |
-| --- | --- | --- |
-| Final build, signature and installed binary | PASS | `build.sh`; `codesign --verify --deep --strict`; installed binary matches build |
-| Core/localization checks | PASS | 66 checks; all 212 translation keys compiled into both host and Finder extension for all eight languages; format placeholders checked; legacy Finder settings preserved |
-| Manual language switching | PASS | Native UI selected English, Simplified/Traditional Chinese, Japanese, Korean, French, German, Spanish; each reflected immediately in controls and navigation |
-| Language persistence and system default | PASS | German survived quit/relaunch; Follow System restored actual system language afterward |
-| Flat consistent logo | PASS | Same solid-blue/white upright-wrench asset in both headers; settings logo centered in 208-point rail; no text wordmark |
-| Settings/secondary pages | PASS | Six English pages, all Finder subpages, template editor; long German and other General-page translations inspected; theme-label column widened to 96 points |
-| Status panel | PASS | English screenshot confirms matching brand logo, 30m/1h/2h/4h/8h/∞ without clipping, localized built-in display title and readable labels |
-| Finder localization integration | PASS | Read-only live configuration probe received language=en, with four menu groups; compiled extension translations verified |
-| Physical native context-menu language | NOT RUN | Automation target changed between Finder windows/desktop; native context-menu clicks were not accepted as proof |
-| macOS standard UI language | System behavior | Standard app menus, permission panels and file-picker buttons follow macOS; system/input-method names retain their own localized names |
-| Store submission | NOT RUN | Deferred by the user; this remains the full functionality developer build |
-
-Raw local UI evidence and test output: `build/localization-audit/report.md`. Earlier hardware acceptance remains unchanged; no fresh hardware-combination claim is made by this UI/localization update.
+CI executes a clean universal build, the core checks and development DMG packaging on a GitHub-hosted macOS runner. The signed workflow separately requires a real distribution identity and successful notarization, stapling and Gatekeeper validation. Local PASS does not imply that those external steps have succeeded.

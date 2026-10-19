@@ -2,24 +2,34 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 mkdir -p build
-TARGET="$(uname -m)-apple-macosx14.0"
+ARCHS="${ARCHS:-$(uname -m)}"
 SDK="$(xcrun --show-sdk-path)"
 APP="$PWD/build/1Tool.app"
 EXT="$APP/Contents/PlugIns/OneToolFinder.appex"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$EXT/Contents/MacOS"
 SOURCES=(Sources/OneTool/*.swift Sources/Shared/*.swift)
-echo "Building 1Tool…"
-xcrun swiftc -swift-version 5 -parse-as-library -O -target "$TARGET" -sdk "$SDK" \
-    "${SOURCES[@]}" -o "$APP/Contents/MacOS/OneTool"
-echo "Building Finder extension…"
-xcrun swiftc -swift-version 5 -parse-as-library -application-extension -O -target "$TARGET" -sdk "$SDK" \
-    Sources/FinderExtension/FinderSync.swift Sources/Shared/SuperRightClickSupport.swift Sources/Shared/Localization.swift \
-    -framework FinderSync -framework AppKit -Xlinker -e -Xlinker _NSExtensionMain \
-    -o "$EXT/Contents/MacOS/OneToolFinder"
+APP_BINARIES=()
+EXT_BINARIES=()
+for arch in $ARCHS; do
+    [[ "$arch" == arm64 || "$arch" == x86_64 ]] || { echo "Unsupported architecture: $arch" >&2; exit 1; }
+    echo "Building 1Tool ($arch)…"
+    APP_BINARY="$PWD/build/OneTool-$arch"
+    EXT_BINARY="$PWD/build/OneToolFinder-$arch"
+    xcrun swiftc -swift-version 5 -parse-as-library -O -target "$arch-apple-macosx14.0" -sdk "$SDK" \
+        "${SOURCES[@]}" -o "$APP_BINARY"
+    xcrun swiftc -swift-version 5 -parse-as-library -application-extension -O -target "$arch-apple-macosx14.0" -sdk "$SDK" \
+        Sources/FinderExtension/FinderSync.swift Sources/Shared/SuperRightClickSupport.swift Sources/Shared/Localization.swift \
+        -framework FinderSync -framework AppKit -Xlinker -e -Xlinker _NSExtensionMain -o "$EXT_BINARY"
+    APP_BINARIES+=("$APP_BINARY")
+    EXT_BINARIES+=("$EXT_BINARY")
+done
+xcrun lipo -create "${APP_BINARIES[@]}" -output "$APP/Contents/MacOS/OneTool"
+xcrun lipo -create "${EXT_BINARIES[@]}" -output "$EXT/Contents/MacOS/OneToolFinder"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 cp Resources/FinderExtension-Info.plist "$EXT/Contents/Info.plist"
 cp -R Resources/FileTemplates "$APP/Contents/Resources/"
 cp LICENSE "$APP/Contents/Resources/LICENSE.txt"
+cp Resources/PrivacyInfo.xcprivacy "$APP/Contents/Resources/"
 cp NOTICE.md "$APP/Contents/Resources/NOTICE.md"
 mkdir -p "$EXT/Contents/Resources"
 xcrun xcstringstool compile Resources/Localizable.xcstrings --output-directory "$APP/Contents/Resources"
@@ -34,8 +44,10 @@ fi
 cp build/AppIcon.icns build/MenuBarIcon.png build/MenuBarIcon@2x.png "$APP/Contents/Resources/"
 IDENTITY="${CODE_SIGN_IDENTITY:-$(security find-identity -v -p codesigning | sed -n 's/.*"\(Apple Development:.*\)"/\1/p' | head -1)}"
 IDENTITY="${IDENTITY:--}"
-codesign --force --options runtime --entitlements Resources/FinderExtension.entitlements --sign "$IDENTITY" "$EXT"
-codesign --force --options runtime --entitlements Resources/App.entitlements --sign "$IDENTITY" "$APP"
+SIGN_FLAGS=(--force --options runtime --sign "$IDENTITY")
+if [[ "$IDENTITY" != - ]]; then SIGN_FLAGS+=(--timestamp); fi
+codesign "${SIGN_FLAGS[@]}" --entitlements Resources/FinderExtension.entitlements "$EXT"
+codesign "${SIGN_FLAGS[@]}" --entitlements Resources/App.entitlements "$APP"
 codesign --verify --deep --strict "$APP"
 echo "Built: $APP"
 if [[ "${1:-}" == "--install" ]]; then

@@ -17,10 +17,10 @@ An independent, focused replacement for the requested features of the local 1too
 Super Right Click (templates, favorite folders, copy path, application opening, hidden files); timed and indefinite keep awake; keyboard backlight; per-display brightness; global and per-app default input sources; changeable menu bar icon. No unrelated utilities.
 
 ## Brand Commitments
-Name: 1Tool. Bundle ID: com.shopkivoo.onetool. Project: /Volumes/Lexar/DevStorage/项目/onetool. The user requests current macOS styling, selectable themes and primary accents (blue by default), and an original upright white wrench on a blue app icon; the settings sidebar shows only this icon. Settings retain their independent layout.
+Name: 1Tool. Bundle ID: com.shopkivoo.onetool. The user requests current macOS styling, selectable themes and primary accents (blue by default), and an original upright white wrench on a blue app icon; the settings sidebar shows only this icon. Settings retain their independent layout.
 
 ## Operating Context
-Local development and installation. Hardware controls report detected support. No App Store release or public deployment is requested. Ported GPL code retains provenance and license.
+Local development and installation. Hardware controls report detected support. GitHub distributes the full edition as a signed and notarized DMG. Mac App Store work is out of scope. Ported GPL code retains provenance and license.
 
 ## Product Principles
 Immediate controls, explicit state, persistent preferences, reversible system changes, and evidence-based hardware support.

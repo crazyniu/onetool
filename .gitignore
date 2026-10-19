@@ -7,3 +7,11 @@ xcuserdata/
 *.p12
 *.mobileprovision
 *.log
+
+*.p8
+*.cer
+*.certSigningRequest
+*.provisionprofile
+*.keychain-db
+.env
+.env.*

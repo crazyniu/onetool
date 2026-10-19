@@ -1,6 +1,6 @@
 # 超级右键迁移范围
 
-参考目录：`/Volumes/Lexar/DevStorage/项目/1tool`，基准提交 `79165ad78566d0ea5f036fb38aed10e6ba08e595`。该目录保持原样。
+上游项目：https://github.com/vorssaint/vorssaint-utils，参考基准提交 `79165ad78566d0ea5f036fb38aed10e6ba08e595`。
 
 | 原文件 | 新文件 | 适配 |
 | --- | --- | --- |
