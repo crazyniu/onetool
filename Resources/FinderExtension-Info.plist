@@ -2,8 +2,9 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
 <key>CFBundleIdentifier</key><string>com.shopkivoo.onetool.finderextension</string>
-<key>CFBundleName</key><string>1Tool 超级右键</string>
-<key>CFBundleDisplayName</key><string>1Tool 超级右键</string>
+<key>CFBundleName</key><string>1Tool Finder Actions</string>
+<key>CFBundleDisplayName</key><string>1Tool Finder Actions</string>
+<key>CFBundleDevelopmentRegion</key><string>en</string>
 <key>CFBundleExecutable</key><string>OneToolFinder</string>
 <key>CFBundlePackageType</key><string>XPC!</string>
 <key>CFBundleShortVersionString</key><string>1.0.0</string>

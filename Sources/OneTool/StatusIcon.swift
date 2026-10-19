@@ -26,11 +26,6 @@ enum BrandGlyph {
     static let applicationIcon: NSImage = {
         Bundle.main.url(forResource: "AppIcon", withExtension: "icns").flatMap { NSImage(contentsOf: $0) } ?? NSImage()
     }()
-    static let wordmark: NSImage = {
-        let image = Bundle.main.url(forResource: "BrandMark", withExtension: "png").flatMap { NSImage(contentsOf: $0) } ?? NSImage()
-        image.isTemplate = true
-        return image
-    }()
     static let pointSize = NSSize(width: 26, height: 20)
     private static let symbolHeight: CGFloat = 16
     private static let base: NSImage? = {

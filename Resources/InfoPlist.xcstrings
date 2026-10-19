@@ -1,0 +1,59 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "NSAppleEventsUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1Tool öffnet Ordner im gewählten Terminal und schaltet versteckte Dateien im Finder um, wenn du diese Aktionen wählst."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1Tool opens folders in your chosen terminal and toggles hidden files in Finder when you choose these actions."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1Tool abre carpetas en el terminal elegido y cambia la visibilidad de archivos ocultos en Finder cuando eliges estas acciones."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1Tool ouvre les dossiers dans le terminal choisi et affiche ou masque les fichiers cachés dans le Finder lorsque vous choisissez ces actions."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1Tool は選択した Finder 操作に応じて、ターミナルでフォルダを開いたり、隠しファイルの表示を切り替えたりします。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1Tool은 선택한 Finder 동작에 따라 터미널에서 폴더를 열거나 숨김 파일 표시를 전환합니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1Tool 根据你选择的右键操作，在终端打开文件夹或切换 Finder 隐藏文件显示。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1Tool 根據你選擇的右鍵操作，在終端機打開檔案夾或切換 Finder 隱藏檔案顯示。"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

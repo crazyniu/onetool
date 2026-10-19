@@ -43,7 +43,7 @@ struct InputRule: Codable, Identifiable, Equatable {
     }
     func refresh() {
         sources = InputSourceSelection.availableReadings()
-        currentName = InputSourceSelection.currentReading()?.name ?? "无法读取"
+        currentName = InputSourceSelection.currentReading()?.name ?? L("Unavailable")
     }
     static func target(bundleID: String, rules: [InputRule], fallback: String, available: [String]) -> String? {
         let id = rules.first { $0.id == bundleID }?.sourceID ?? fallback
@@ -61,16 +61,16 @@ struct InputRule: Codable, Identifiable, Equatable {
             guard !configured.isEmpty else { return }
             guard let target = Self.target(bundleID: id, rules: self.rules, fallback: self.fallback,
                                            available: self.sources.map(\.id)) else {
-                self.error = "所选输入法已停用，请在系统设置中启用或重新选择。"; return
+                self.error = L("The input source is disabled. Enable it in System Settings or choose another one."); return
             }
             let selected = InputSourceSelection.currentReading()?.id == target || InputSourceSelection.select(sourceID: target)
             guard selected else {
-                self.error = "切换输入法失败，请重新选择后再试。"
+                self.error = L("Could not switch input sources. Choose another one and try again.")
                 self.refresh()
                 return
             }
             if self.clearCapsLock && !DefaultInputSourceCapsLock.clear() {
-                self.error = "输入法已应用，无法关闭大写锁定。请检查辅助功能权限。"
+                self.error = L("Input source applied, but Caps Lock could not be turned off. Check Accessibility permission.")
             }
             self.refresh()
         }
@@ -79,7 +79,7 @@ struct InputRule: Codable, Identifiable, Equatable {
     }
     func addApplication() {
         let panel = NSOpenPanel()
-        panel.title = "选择应用"; panel.directoryURL = URL(fileURLWithPath: "/Applications")
+        panel.title = L("Choose an App"); panel.directoryURL = URL(fileURLWithPath: "/Applications")
         panel.canChooseDirectories = false; panel.allowedContentTypes = [.application]
         guard panel.runModal() == .OK, let url = panel.url,
               let id = Bundle(url: url)?.bundleIdentifier else { return }

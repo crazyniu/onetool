@@ -3,10 +3,14 @@ import AppKit
 import Observation
 
 struct DisplayState: Identifiable {
-    enum Method: String { case system = "系统亮度", ddc = "DDC 硬件调光", software = "软件调暗", unavailable = "暂不支持调光" }
+    enum Method: String {
+        case system = "System Brightness", ddc = "DDC Hardware Control", software = "Software Dimming", unavailable = "Dimming Unavailable"
+        var title: String { L(rawValue) }
+    }
     let id: CGDirectDisplayID
     let key: String
     let name: String
+    var title: String { builtIn ? L("Built-in Display") : name }
     let builtIn: Bool
     var method: Method
     var level: Double
@@ -175,7 +179,7 @@ struct DisplayState: Identifiable {
                     guard let self, !self.stopped, self.generation == writeGeneration,
                           let index = self.screens.firstIndex(where: { $0.id == id && $0.key == key }) else { return }
                     if failed {
-                        self.screens[index].error = "调节未成功，请刷新或改用软件调暗。"
+                        self.screens[index].error = L("Adjustment failed. Refresh or try software dimming.")
                         self.screens[index].level = previous
                     }
                 }
@@ -263,18 +267,18 @@ struct DisplayState: Identifiable {
         suppressed = bridge?.suppressed ?? false
     }
     func setAutomatic(_ enabled: Bool) {
-        guard bridge?.setAutoBrightness(enabled) == true else { error = "无法更改环境光自动调节，请在系统键盘设置中重试。"; return }
+        guard bridge?.setAutoBrightness(enabled) == true else { error = L("Could not change automatic adjustment. Try Keyboard Settings."); return }
         error = nil; refresh()
     }
     func set(_ value: Double) {
         guard supported, value.isFinite else { return }
         // A saturated ambient-light sensor suppresses manual writes while auto-brightness is on.
         if automatic {
-            guard bridge?.setAutoBrightness(false) == true else { error = "请先在系统键盘设置中关闭环境光自动调节。"; return }
+            guard bridge?.setAutoBrightness(false) == true else { error = L("Turn off automatic adjustment in Keyboard Settings first."); return }
             automatic = false
         }
         guard bridge?.setBrightness(Float(min(max(value, 0), 1))) == true else {
-            error = "键盘背光调节失败，请在系统设置中检查自动亮度。"; return
+            error = L("Could not change the backlight. Check automatic brightness in System Settings."); return
         }
         error = nil; level = min(max(value, 0), 1)
         verification?.cancel()
@@ -282,7 +286,7 @@ struct DisplayState: Identifiable {
         let work = DispatchWorkItem { [weak self] in
             guard let self else { return }
             self.refresh()
-            if abs(self.level - requested) > 0.03 { self.error = "系统未应用此亮度，请检查环境光、键盘状态后重试。" }
+            if abs(self.level - requested) > 0.03 { self.error = L("The brightness was not applied. Check ambient light and keyboard status, then try again.") }
         }
         verification = work
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: work)

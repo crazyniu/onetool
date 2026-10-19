@@ -53,15 +53,15 @@ import IOKit.ps
     func start(minutes: Double? = nil, automatic: Bool = false) {
         stop()
         let types = assertionTypes
-        guard !types.isEmpty else { error = "请至少选择一种防休眠方式。"; return }
+        guard !types.isEmpty else { error = L("Select at least one sleep-prevention option."); return }
         var created: [IOPMAssertionID] = []
         for type in types {
             var id: IOPMAssertionID = 0
             let result = IOPMAssertionCreateWithName(type as CFString, IOPMAssertionLevel(kIOPMAssertionLevelOn),
-                                                    "1Tool 保持唤醒" as CFString, &id)
+                                                    L("1Tool Keep Awake") as CFString, &id)
             guard result == kIOReturnSuccess else {
                 created.forEach { IOPMAssertionRelease($0) }
-                error = "无法启用防休眠（\(result)），请检查电源状态后重试。"
+                error = LF("Could not keep awake (%d). Check your power source and try again.", result)
                 return
             }
             created.append(id)

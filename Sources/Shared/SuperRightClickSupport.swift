@@ -38,12 +38,12 @@ enum SuperRightClickScope {
 enum SuperRightClickGroup: String, Codable, CaseIterable, Identifiable {
     case newFile, directories, copyPath, openWith
     var id: String { rawValue }
-    func title(chinese: Bool) -> String {
+    func title(language: String? = nil) -> String {
         switch self {
-        case .newFile: return chinese ? "新建文件" : "New File"
-        case .directories: return chinese ? "常用目录" : "Favorite Folders"
-        case .copyPath: return chinese ? "复制路径" : "Copy Path"
-        case .openWith: return chinese ? "快捷操作" : "Quick Actions"
+        case .newFile: return L("New File", language: language)
+        case .directories: return L("Favorite Folders", language: language)
+        case .copyPath: return L("Copy Path", language: language)
+        case .openWith: return L("Quick Actions", language: language)
         }
     }
 }
@@ -58,7 +58,7 @@ struct SuperRightClickEntry: Codable, Identifiable, Equatable {
 
 struct SuperRightClickConfiguration: Codable, Equatable {
     var enabled = false
-    var chinese = true
+    var language = "system"
     var token = ""
     var order = SuperRightClickGroup.allCases
     var hiddenGroups: [SuperRightClickGroup] = []
@@ -92,7 +92,7 @@ struct SuperRightClickConfiguration: Codable, Equatable {
 
 extension SuperRightClickConfiguration {
     private enum CodingKeys: String, CodingKey {
-        case enabled, chinese, token, order, hiddenGroups, showHiddenToggle
+        case enabled, language, token, order, hiddenGroups, showHiddenToggle
         case templates, directories, applications, disabledApplications
     }
     // Preserve configurations saved before per-app switches were introduced.
@@ -100,7 +100,7 @@ extension SuperRightClickConfiguration {
         self.init()
         let values = try decoder.container(keyedBy: CodingKeys.self)
         enabled = try values.decodeIfPresent(Bool.self, forKey: .enabled) ?? enabled
-        chinese = try values.decodeIfPresent(Bool.self, forKey: .chinese) ?? chinese
+        language = try values.decodeIfPresent(String.self, forKey: .language) ?? language
         token = try values.decodeIfPresent(String.self, forKey: .token) ?? token
         order = try values.decodeIfPresent([SuperRightClickGroup].self, forKey: .order) ?? order
         hiddenGroups = try values.decodeIfPresent([SuperRightClickGroup].self, forKey: .hiddenGroups) ?? hiddenGroups

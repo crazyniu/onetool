@@ -1,15 +1,50 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import SwiftUI
 
-struct BrandWordmark: View {
-    var size: CGFloat = 25
+struct BrandLogo: View {
+    var size: CGFloat = 32
     var body: some View {
-        HStack(spacing: 2) {
-            Image(nsImage: BrandGlyph.wordmark).renderingMode(.template)
-                .resizable().scaledToFit().frame(width: size * 0.72, height: size * 1.2)
-            Text("Tool").font(.system(size: size, weight: .semibold, design: .rounded))
-        }.foregroundStyle(Color(nsColor: .labelColor))
-            .accessibilityElement(children: .ignore).accessibilityLabel("1Tool")
+        Image(nsImage: BrandGlyph.applicationIcon).resizable().scaledToFit()
+            .frame(width: size, height: size).accessibilityLabel("1Tool")
+    }
+}
+
+struct LanguageControls: View {
+    @AppStorage(AppLanguage.preferenceKey) private var language = "system"
+    @State private var choosingLanguage = false
+    var body: some View {
+        ToolSection(title: L("Language")) {
+            HStack {
+                Text(L("App Language"))
+                Spacer(minLength: 16)
+                Button { choosingLanguage = true } label: {
+                    HStack(spacing: 8) {
+                        Text(verbatim: AppLanguage.names[language] ?? L("Follow System"))
+                        Image(systemName: "chevron.up.chevron.down").font(.caption2)
+                    }
+                }.accessibilityLabel(L("App Language"))
+                    .accessibilityValue(AppLanguage.names[language] ?? L("Follow System"))
+                    .popover(isPresented: $choosingLanguage, arrowEdge: .bottom) {
+                        VStack(spacing: 2) {
+                            ForEach(["system"] + AppLanguage.supported, id: \.self) { code in
+                                if code == "en" { Divider().padding(.vertical, 3) }
+                                Button {
+                                    choosingLanguage = false
+                                    language = code
+                                } label: {
+                                    HStack {
+                                        Text(verbatim: AppLanguage.names[code] ?? L("Follow System"))
+                                        Spacer()
+                                        Image(systemName: "checkmark").opacity(language == code ? 1 : 0)
+                                            .accessibilityHidden(true)
+                                    }.padding(.horizontal, 10).padding(.vertical, 7).contentShape(Rectangle())
+                                }.buttonStyle(.plain).accessibilityAddTraits(language == code ? .isSelected : [])
+                            }
+                        }.padding(6).frame(width: 220)
+                    }
+            }
+            HelpText(L("Changes apply immediately, including Finder actions."))
+        }
     }
 }
 
@@ -26,15 +61,15 @@ enum AppAccent: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .system: return "跟随系统"
-        case .blue: return "科技蓝"
-        case .purple: return "紫色"
-        case .pink: return "粉色"
-        case .red: return "红色"
-        case .orange: return "橙色"
-        case .yellow: return "黄色"
-        case .green: return "绿色"
-        case .graphite: return "石墨色"
+        case .system: return L("Follow System")
+        case .blue: return L("Blue")
+        case .purple: return L("Purple")
+        case .pink: return L("Pink")
+        case .red: return L("Red")
+        case .orange: return L("Orange")
+        case .yellow: return L("Yellow")
+        case .green: return L("Green")
+        case .graphite: return L("Graphite")
         }
     }
     var color: Color {
@@ -75,23 +110,23 @@ struct AppearanceControls: View {
     @AppStorage("appearance.accent") private var accentName = "blue"
     @Environment(\.toolAccent) private var accent
     var body: some View {
-        ToolSection(title: "外观") {
+        ToolSection(title: L("Appearance")) {
             HStack(alignment: .top, spacing: 16) {
-                Text("主题").frame(width: 64, alignment: .leading).padding(.top, 20)
-                ForEach([("light", "浅色"), ("dark", "深色"), ("system", "自动")], id: \.0) { value, title in
+                Text(L("Theme")).frame(width: 96, alignment: .leading).padding(.top, 20)
+                ForEach([("light", L("Light")), ("dark", L("Dark")), ("system", L("Automatic"))], id: \.0) { value, title in
                     Button { scheme = value } label: {
                         VStack(spacing: 8) {
                             ThemePreview(mode: value).frame(width: 100, height: 58)
                                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(scheme == value ? accent : .clear, lineWidth: 3).padding(-4))
                             Text(title).font(.callout).fontWeight(scheme == value ? .semibold : .regular)
                         }.contentShape(Rectangle())
-                    }.buttonStyle(.plain).accessibilityLabel("主题：" + title)
+                    }.buttonStyle(.plain).accessibilityLabel(LF("Theme: %@", title))
                         .accessibilityAddTraits(scheme == value ? .isSelected : [])
                 }
             }
             Divider().padding(.vertical, 4)
             HStack(spacing: 10) {
-                Text("主色调").frame(width: 64, alignment: .leading)
+                Text(L("Accent Color")).frame(width: 96, alignment: .leading)
                 ForEach(AppAccent.allCases) { choice in
                     Button { accentName = choice.rawValue } label: {
                         Circle().fill(choice.color)
@@ -103,11 +138,11 @@ struct AppearanceControls: View {
                             .frame(width: 26, height: 26)
                             .overlay { if AppAccent.resolve(accentName) == choice { Image(systemName: "checkmark").font(.system(size: 12, weight: .bold)).foregroundStyle(choice == .yellow ? .black : .white) } }
                             .padding(4).contentShape(Circle())
-                    }.buttonStyle(.plain).help(choice.title).accessibilityLabel("主色调：" + choice.title)
+                    }.buttonStyle(.plain).help(choice.title).accessibilityLabel(LF("Accent color: %@", choice.title))
                         .accessibilityAddTraits(AppAccent.resolve(accentName) == choice ? .isSelected : [])
                 }
             }
-            HelpText("自动主题跟随 macOS 外观。主色调用于按钮、滑块和选中状态。")
+            HelpText(L("Automatic follows macOS appearance. Accent color applies to controls and selections."))
         }
     }
 }
@@ -133,7 +168,7 @@ private struct ThemePreview: View {
                 Spacer()
             }.padding(6).background(dark ? Color(white: 0.20) : Color(white: 0.94))
             HStack(spacing: 0) {
-                Color.blue.opacity(0.20).frame(width: 18)
+                Color(white: dark ? 0.24 : 0.90).frame(width: 18)
                 Rectangle().fill(dark ? Color(white: 0.14) : .white)
             }
         }.clipShape(RoundedRectangle(cornerRadius: 5))
@@ -147,8 +182,11 @@ struct QuickPanelRoot: View {
     let onHeightChange: (CGFloat) -> Void
     @AppStorage("appearance.accent") private var accent = "blue"
     @AppStorage("appearance.scheme") private var scheme = "system"
+    @AppStorage(AppLanguage.preferenceKey) private var language = "system"
     var body: some View {
         QuickPanel(model: model, maximumHeight: maximumHeight, onHeightChange: onHeightChange)
+            .id(language)
+            .environment(\.locale, Locale(identifier: AppLanguage.resolve(language)))
             .padding(.top, 10)
             .background(StatusPanelShape(arrowX: anchor.arrowX).fill(Theme.canvas))
             .clipShape(StatusPanelShape(arrowX: anchor.arrowX))

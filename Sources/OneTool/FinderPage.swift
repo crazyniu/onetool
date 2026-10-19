@@ -8,25 +8,25 @@ struct FinderPage: View {
     @State private var editing: SuperRightClickEntry?
     var body: some View {
         ToolSection(title: "") {
-            SettingToggle(title: "启用超级右键", subtitle: "在 Finder 的文件、文件夹和空白处右键使用", value: $service.configuration.enabled)
+            SettingToggle(title: L("Enable Finder Actions"), subtitle: L("Right-click a file, folder, or empty space in Finder"), value: $service.configuration.enabled)
             Divider()
             HStack(spacing: 10) {
                 Image(systemName: service.extensionEnabled ? "checkmark.circle.fill" : "puzzlepiece.extension")
                     .foregroundStyle(service.extensionEnabled ? accent : .secondary)
-                Text(service.extensionEnabled ? "Finder 扩展已启用" : "需要在系统设置中允许 Finder 扩展").font(.callout)
+                Text(service.extensionEnabled ? L("Finder Extension Enabled") : L("Allow the Finder extension in System Settings")).font(.callout)
                 Spacer()
-                Button(service.extensionEnabled ? "管理扩展…" : "启用扩展…") { service.openExtensionSettings() }
+                Button(service.extensionEnabled ? L("Manage Extension…") : L("Enable Extension…")) { service.openExtensionSettings() }
             }
-            HelpText("启用“1Tool 超级右键”后，打开一个新的 Finder 窗口。如果菜单未出现，可在扩展设置中关闭后重新开启。")
+            HelpText(L("Enable the 1Tool Finder extension, then open a new Finder window. If actions are missing, turn the extension off and on again."))
         }
-        Picker("右键设置", selection: $tab) {
-            Text("菜单项目").tag(0); Text("文件模板").tag(1); Text("目录与应用").tag(2)
+        Picker(L("Finder Action Settings"), selection: $tab) {
+            Text(L("Menu Items")).tag(0); Text(L("File Templates")).tag(1); Text(L("Folders & Apps")).tag(2)
         }.pickerStyle(.segmented).labelsHidden()
         if tab == 0 {
-            ToolSection(title: "显示与顺序") {
+            ToolSection(title: L("Visibility & Order")) {
                 ForEach(service.configuration.visibleAndHiddenGroups) { group in
                     HStack {
-                        Toggle(group.title(chinese: true), isOn: Binding(get: {
+                        Toggle(group.title(), isOn: Binding(get: {
                             !service.configuration.hiddenGroups.contains(group)
                         }, set: { visible in
                             if visible { service.configuration.hiddenGroups.removeAll { $0 == group } }
@@ -34,19 +34,19 @@ struct FinderPage: View {
                         })).toggleStyle(.checkbox)
                         Spacer()
                         Button { move(group, by: -1) } label: { Image(systemName: "chevron.up") }
-                            .disabled(service.configuration.visibleAndHiddenGroups.first == group).help("上移").accessibilityLabel("上移" + group.title(chinese: true))
+                            .disabled(service.configuration.visibleAndHiddenGroups.first == group).help(L("Move Up")).accessibilityLabel(LF("Move Up: %@", group.title()))
                         Button { move(group, by: 1) } label: { Image(systemName: "chevron.down") }
-                            .disabled(service.configuration.visibleAndHiddenGroups.last == group).help("下移").accessibilityLabel("下移" + group.title(chinese: true))
+                            .disabled(service.configuration.visibleAndHiddenGroups.last == group).help(L("Move Down")).accessibilityLabel(LF("Move Down: %@", group.title()))
                     }
                     if group != service.configuration.visibleAndHiddenGroups.last { Divider() }
                 }
                 Divider()
-                Toggle("快捷操作中显示“显示／隐藏隐藏文件”", isOn: $service.configuration.showHiddenToggle).toggleStyle(.checkbox)
-                HelpText("此操作切换 Finder 对隐藏文件的显示，并重新启动 Finder，不改变文件的隐藏属性。")
+                Toggle(L("Include Show / Hide Hidden Files"), isOn: $service.configuration.showHiddenToggle).toggleStyle(.checkbox)
+                HelpText(L("Toggle hidden-file visibility and relaunch Finder. File attributes are not changed."))
             }
         } else if tab == 1 {
-            ToolSection(title: "新建文件模板") {
-                if service.configuration.templates.isEmpty { HelpText("添加常用文件类型，右键时直接创建。") }
+            ToolSection(title: L("New File Templates")) {
+                if service.configuration.templates.isEmpty { HelpText(L("Add file types to create them from the context menu.")) }
                 ForEach(service.configuration.templates) { entry in
                     HStack {
                         Image(systemName: "doc.text").foregroundStyle(accent)
@@ -55,61 +55,61 @@ struct FinderPage: View {
                             HelpText("." + entry.value)
                         }
                         Spacer()
-                        Button("编辑") { editing = entry }
-                        removeButton("移除模板 " + entry.name) { service.configuration.templates.removeAll { $0.id == entry.id } }
+                        Button(L("Edit")) { editing = entry }
+                        removeButton(LF("Remove template %@", entry.name)) { service.configuration.templates.removeAll { $0.id == entry.id } }
                     }
                     if entry.id != service.configuration.templates.last?.id { Divider() }
                 }
-                Button("添加模板…", systemImage: "plus") { editing = SuperRightClickTemplatePreset.txt.entry }
+                Button(L("Add Template…"), systemImage: "plus") { editing = SuperRightClickTemplatePreset.txt.entry }
                     .disabled(service.configuration.templates.count >= 32)
             }
-            HelpText("文件创建前可以修改名称。已有文件不会被覆盖；Word 和 Excel 使用真实空白文档。")
+            HelpText(L("Choose a name before creating a file. Existing files are never overwritten. Word and Excel use blank documents."))
         } else {
-            ToolSection(title: "常用目录") {
-                if service.configuration.directories.isEmpty { HelpText("把经常访问的目录放进右键菜单。") }
+            ToolSection(title: L("Favorite Folders")) {
+                if service.configuration.directories.isEmpty { HelpText(L("Keep frequently used folders in your context menu.")) }
                 ForEach($service.configuration.directories) { $entry in
                     HStack {
                         Image(systemName: "folder").foregroundStyle(accent)
                         VStack(alignment: .leading, spacing: 3) {
-                            TextField("菜单名称", text: $entry.name).textFieldStyle(.plain).accessibilityLabel("目录菜单名称 " + entry.name)
+                            TextField(L("Menu Name"), text: $entry.name).textFieldStyle(.plain).accessibilityLabel(LF("Folder menu name: %@", entry.name))
                             HelpText(entry.value).lineLimit(1)
                         }
                         Spacer()
-                        removeButton("移除目录 " + entry.name) { service.configuration.directories.removeAll { $0.id == entry.id } }
+                        removeButton(LF("Remove folder %@", entry.name)) { service.configuration.directories.removeAll { $0.id == entry.id } }
                     }
                 }
-                Button("添加目录…", systemImage: "plus") { service.addFolder() }.disabled(service.configuration.directories.count >= 32)
+                Button(L("Add Folder…"), systemImage: "plus") { service.addFolder() }.disabled(service.configuration.directories.count >= 32)
             }
-            ToolSection(title: "快捷打开") {
+            ToolSection(title: L("Open With")) {
                 ForEach(service.availableApplications) { entry in
                     HStack(spacing: 10) {
                         Image(nsImage: NSWorkspace.shared.icon(forFile: entry.value)).resizable().frame(width: 22, height: 22)
                         Text(entry.name)
                         Spacer()
-                        Toggle("启用 " + entry.name, isOn: Binding(get: {
+                        Toggle(LF("Enable %@", entry.name), isOn: Binding(get: {
                             !service.configuration.disabledApplications.contains(entry.id)
                         }, set: { enabled in
                             service.configuration.disabledApplications.removeAll { $0 == entry.id }
                             if !enabled { service.configuration.disabledApplications.append(entry.id) }
-                        })).labelsHidden().toggleStyle(.switch).controlSize(.small).accessibilityLabel("启用软件入口 " + entry.name)
+                        })).labelsHidden().toggleStyle(.switch).controlSize(.small).accessibilityLabel(LF("Enable app action: %@", entry.name))
                         if !service.detectedApplications.contains(where: { $0.value == entry.value }) {
-                            removeButton("移除应用 " + entry.name) { service.configuration.applications.removeAll { $0.id == entry.id } }
+                            removeButton(LF("Remove app %@", entry.name)) { service.configuration.applications.removeAll { $0.id == entry.id } }
                         }
                     }
                 }
                 HStack {
-                    Button("刷新已安装软件", systemImage: "arrow.clockwise") { service.refreshApplications() }
+                    Button(L("Refresh Installed Apps"), systemImage: "arrow.clockwise") { service.refreshApplications() }
                     Spacer()
-                    Button("添加应用…", systemImage: "plus") { service.addApplication() }.disabled(service.configuration.applications.count >= 32)
+                    Button(L("Add App…"), systemImage: "plus") { service.addApplication() }.disabled(service.configuration.applications.count >= 32)
                 }
-                HelpText("终端会切换到当前文件夹；编辑器与其他应用使用系统“打开”操作。")
+                HelpText(L("Terminals open at the current folder. Editors and other apps use the system Open action."))
             }
         }
         ErrorText(error: service.error)
         HStack {
-            Button("在 Finder 中试用", systemImage: "folder") { NSWorkspace.shared.open(FileManager.default.homeDirectoryForCurrentUser) }
+            Button(L("Try in Finder"), systemImage: "folder") { NSWorkspace.shared.open(FileManager.default.homeDirectoryForCurrentUser) }
             Spacer()
-            Button("刷新状态", systemImage: "arrow.clockwise") { service.refreshStatus() }
+            Button(L("Refresh Status"), systemImage: "arrow.clockwise") { service.refreshStatus() }
         }
         .onChange(of: service.configuration) { service.save() }
         .onAppear { service.refreshStatus(); service.refreshApplications() }
@@ -150,25 +150,25 @@ struct TemplateEditor: View {
     }
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("文件模板").font(.title2).fontWeight(.semibold)
-            Picker("预设", selection: $preset) {
-                Text("自定义").tag(SuperRightClickTemplatePreset.custom)
+            Text(L("File Templates")).font(.title2).fontWeight(.semibold)
+            Picker(L("Preset"), selection: $preset) {
+                Text(L("Custom")).tag(SuperRightClickTemplatePreset.custom)
                 ForEach(SuperRightClickTemplatePreset.allCases.filter { $0 != .custom }) { item in Text(item.title).tag(item) }
             }.onChange(of: preset) {
                 guard preset != .custom else { return }
                 let id = entry.id; entry = preset.entry; entry.id = id
             }
-            TextField("菜单名称", text: $entry.name).textFieldStyle(.roundedBorder)
-            TextField("扩展名，例如 txt", text: $entry.value).textFieldStyle(.roundedBorder)
+            TextField(L("Menu Name"), text: $entry.name).textFieldStyle(.roundedBorder)
+            TextField(L("Extension, such as txt"), text: $entry.value).textFieldStyle(.roundedBorder)
             if !SuperRightClickTemplates.isOffice(entry.value) {
-                Text("初始内容").font(.callout)
+                Text(L("Initial Content")).font(.callout)
                 TextEditor(text: $entry.content).font(.system(.body, design: .monospaced)).frame(height: 140)
                     .overlay(RoundedRectangle(cornerRadius: 6).stroke(.separator))
-            } else { HelpText("使用随应用提供的空白 Office 文档。") }
+            } else { HelpText(L("Uses the blank Office document bundled with the app.")) }
             HStack {
                 Spacer()
-                Button("取消") { dismiss() }.keyboardShortcut(.cancelAction)
-                Button("保存") {
+                Button(L("Cancel")) { dismiss() }.keyboardShortcut(.cancelAction)
+                Button(L("Save")) {
                     entry.name = entry.name.trimmingCharacters(in: .whitespacesAndNewlines)
                     entry.value = SuperRightClickTemplates.normalizedExtension(entry.value)
                     if SuperRightClickTemplates.isOffice(entry.value) { entry.content = "" }

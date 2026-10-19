@@ -10,37 +10,39 @@ struct QuickPanel: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    BrandWordmark(size: 20)
+                    BrandLogo(size: 32)
                     Spacer()
-                    OpenMainButton(title: "打开设置", page: .awake).buttonStyle(.bordered).foregroundStyle(.primary).controlSize(.small)
+                    OpenMainButton(title: L("Open Settings"), page: .awake).buttonStyle(.bordered).foregroundStyle(.primary).controlSize(.small)
                 }
                 Divider()
                 HStack {
-                    Label("防止休眠", systemImage: "cup.and.saucer")
+                    Label(L("Keep Awake"), systemImage: "cup.and.saucer")
                     Spacer()
-                    Toggle("防止休眠", isOn: Binding(get: { model.awake.isActive }, set: {
+                    Toggle(L("Keep Awake"), isOn: Binding(get: { model.awake.isActive }, set: {
                         if $0 { model.awake.start() } else { model.awake.stop() }
                     })).labelsHidden().toggleStyle(.switch).controlSize(.small)
                 }
                 if let end = model.awake.endDate {
-                    HStack { Text("结束时间").foregroundStyle(.secondary); Spacer(); Text(end, style: .time).monospacedDigit() }.font(.caption)
+                    HStack { Text(L("Ends At")).foregroundStyle(.secondary); Spacer(); Text(end, style: .time).monospacedDigit() }.font(.caption)
                 }
-                HStack {
+                HStack(spacing: 6) {
                     ForEach([30, 60, 120, 240, 480], id: \.self) { minutes in
-                        Button(minutes < 60 ? "\(minutes) 分" : "\(minutes / 60) 时") { model.awake.start(minutes: Double(minutes)) }
+                        Button(minutes < 60 ? LF("%dm", minutes) : LF("%dh", minutes / 60)) { model.awake.start(minutes: Double(minutes)) }
                             .font(.system(size: 12)).foregroundStyle(.primary).frame(maxWidth: .infinity)
+                            .help(minutes < 60 ? LF("%d min", minutes) : LF("%d hr", minutes / 60))
+                            .accessibilityLabel(minutes < 60 ? LF("%d min", minutes) : LF("%d hr", minutes / 60))
                     }
                     Button { model.awake.start() } label: { Image(systemName: "infinity") }
-                        .help("无限防休眠").accessibilityLabel("无限防休眠")
-                }
+                        .help(L("Keep Awake Indefinitely")).accessibilityLabel(L("Keep Awake Indefinitely"))
+                }.controlSize(.small)
                 ErrorText(error: model.awake.error)
                 Divider()
-                HStack { Label("屏幕亮度", systemImage: "display"); Spacer(); OpenMainButton(title: "管理", page: .displays).buttonStyle(.bordered).foregroundStyle(.primary).controlSize(.small) }
+                HStack { Label(L("Display Brightness"), systemImage: "display"); Spacer(); OpenMainButton(title: L("Manage"), page: .displays).buttonStyle(.bordered).foregroundStyle(.primary).controlSize(.small) }
                 if model.displays.scanning { ProgressView().controlSize(.small) }
                 ForEach(model.displays.screens) { screen in
                     VStack(alignment: .leading, spacing: 5) {
-                        HStack { Text(screen.name).lineLimit(1); Spacer(); Text(screen.method.rawValue).foregroundStyle(.secondary).font(.system(size: 11)) }
-                        LevelSlider(title: screen.name + "亮度", value: Binding(get: {
+                        HStack { Text(screen.title).lineLimit(1); Spacer(); Text(screen.method.title).foregroundStyle(.secondary).font(.system(size: 11)) }
+                        LevelSlider(title: LF("%@ Brightness", screen.title), value: Binding(get: {
                             model.displays.screens.first(where: { $0.id == screen.id })?.level ?? screen.level
                         }, set: { model.displays.set(screen.id, level: $0) }), disabled: model.displays.scanning || screen.method == .unavailable)
                         ErrorText(error: screen.error)
@@ -48,16 +50,16 @@ struct QuickPanel: View {
                 }
                 if model.keyboard.supported {
                     Divider()
-                    Label("键盘背光", systemImage: "keyboard")
-                    LevelSlider(title: "键盘背光", value: Binding(get: { model.keyboard.level }, set: { model.keyboard.set($0) }))
+                    Label(L("Keyboard Backlight"), systemImage: "keyboard")
+                    LevelSlider(title: L("Keyboard Backlight"), value: Binding(get: { model.keyboard.level }, set: { model.keyboard.set($0) }))
                     ErrorText(error: model.keyboard.error)
                 }
                 Divider()
-                HStack { Label(model.input.currentName, systemImage: "character.cursor.ibeam").lineLimit(1); Spacer(); OpenMainButton(title: "输入法", page: .input).buttonStyle(.bordered).foregroundStyle(.primary).controlSize(.small) }.font(.caption)
+                HStack { Label(model.input.currentName, systemImage: "globe").lineLimit(1); Spacer(); OpenMainButton(title: L("Input Sources"), page: .input).buttonStyle(.bordered).foregroundStyle(.primary).controlSize(.small) }.font(.caption)
                 HStack {
-                    OpenMainButton(title: "更换图标…", page: .appearance).buttonStyle(.bordered).foregroundStyle(.primary).controlSize(.small)
+                    OpenMainButton(title: L("Change Icon…"), page: .appearance).buttonStyle(.bordered).foregroundStyle(.primary).controlSize(.small)
                     Spacer()
-                    Button("退出") { NSApp.terminate(nil) }.buttonStyle(.bordered).foregroundStyle(.primary).controlSize(.small)
+                    Button(L("Quit")) { NSApp.terminate(nil) }.buttonStyle(.bordered).foregroundStyle(.primary).controlSize(.small)
                 }.font(.caption)
             }.padding(16)
                 .fixedSize(horizontal: false, vertical: true)

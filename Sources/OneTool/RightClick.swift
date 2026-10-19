@@ -28,8 +28,6 @@ import FinderSync
         start()
         refreshStatus()
     }
-    var chinese: Bool { true }
-    func text(_ zh: String, _ en: String) -> String { chinese ? zh : en }
     var availableApplications: [SuperRightClickEntry] {
         SuperRightClickApplications.available(custom: configuration.applications,
                                               detected: detectedApplications) {
@@ -73,7 +71,7 @@ import FinderSync
     func save() {
         if let raw = SuperRightClickIPC.encode(configuration) {
             guard raw.utf8.count <= 256 * 1024 else {
-                error = text("模板内容过大，请缩短后再保存。", "Template content is too large. Shorten it to save.")
+                error = L("Template content is too large. Shorten it to save.")
                 return
             }
             UserDefaults.standard.set(raw, forKey: "finder.configuration")
@@ -85,7 +83,7 @@ import FinderSync
         guard started else { start(); return }
         var value = configuration
         value.enabled = configuration.enabled
-        value.chinese = chinese
+        value.language = AppLanguage.current
         value.token = token
         value.applications = activeApplications
         publish(value, force: force)
@@ -144,9 +142,9 @@ import FinderSync
         case "directory":
             guard let entry = config.directories.first(where: { $0.id == request.entryID }),
                   let folder = SuperRightClickFiles.directory(entry.value) else {
-                fail(text("常用目录不存在或无法访问。", "The favorite folder is missing or inaccessible.")); return
+                fail(L("The favorite folder is missing or inaccessible.")); return
             }
-            if !NSWorkspace.shared.open(folder) { fail(text("无法打开目录。", "Could not open the folder.")) }
+            if !NSWorkspace.shared.open(folder) { fail(L("Could not open the folder.")) }
         case "application":
             guard let entry = activeApplications.first(where: { $0.id == request.entryID }) else { return }
             openApplication(entry, directory: directory)
@@ -160,13 +158,13 @@ import FinderSync
     private func createFile(in directory: URL, template: SuperRightClickEntry?) {
         busy = true
         let alert = NSAlert()
-        alert.messageText = text("新建文件", "New File")
+        alert.messageText = L("New File")
         alert.informativeText = directory.path
         let field = NSTextField(string: template.map { "Untitled." + $0.value } ?? "Untitled.txt")
         field.frame = NSRect(x: 0, y: 0, width: 340, height: 24)
         alert.accessoryView = field
-        alert.addButton(withTitle: text("创建", "Create"))
-        alert.addButton(withTitle: text("取消", "Cancel"))
+        alert.addButton(withTitle: L("Create"))
+        alert.addButton(withTitle: L("Cancel"))
         alert.window.initialFirstResponder = field
         NSApp.activate(ignoringOtherApps: true)
         guard alert.runModal() == .alertFirstButtonReturn else { busy = false; return }
@@ -186,7 +184,7 @@ import FinderSync
     private func openApplication(_ entry: SuperRightClickEntry, directory: URL) {
         let app = URL(fileURLWithPath: entry.value)
         guard app.pathExtension == "app", let bundle = Bundle(url: app) else {
-            fail(text("软件不存在，请重新选择。", "The app is missing. Choose it again.")); return
+            fail(L("The app is missing. Choose it again.")); return
         }
         let id = bundle.bundleIdentifier
         if id == "com.apple.Terminal" || id == "com.googlecode.iterm2" {
@@ -222,7 +220,7 @@ import FinderSync
     private func fail(_ message: String) {
         error = message
         let alert = NSAlert()
-        alert.messageText = text("超级右键", "Super Right Click")
+        alert.messageText = L("Finder Actions")
         alert.informativeText = message
         NSApp.activate(ignoringOtherApps: true)
         alert.runModal()
@@ -236,7 +234,7 @@ import FinderSync
         panel.canChooseFiles = application; panel.canChooseDirectories = !application
         panel.allowsMultipleSelection = true
         if application { panel.allowedContentTypes = [.applicationBundle] }
-        panel.message = application ? "选择右键打开的软件" : "选择常用目录"
+        panel.message = application ? L("Choose apps for Finder actions") : L("Choose favorite folders")
         guard panel.runModal() == .OK else { return }
         for url in panel.urls {
             let entry = SuperRightClickEntry(name: FileManager.default.displayName(atPath: url.path), value: url.path)
@@ -269,7 +267,7 @@ import FinderSync
             CFPreferencesSetAppValue(key, (!shown) as CFBoolean, domain)
             CFPreferencesAppSynchronize(domain)
             let ok = restartFinder()
-            DispatchQueue.main.async { self.busy = false; if !ok { self.fail("无法刷新 Finder，请手动重新打开 Finder。") } }
+            DispatchQueue.main.async { self.busy = false; if !ok { self.fail(L("Could not refresh Finder. Reopen Finder manually.")) } }
         }
     }
     private func restartFinder() -> Bool {

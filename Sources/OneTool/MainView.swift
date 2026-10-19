@@ -7,23 +7,22 @@ struct MainView: View {
     @Bindable var model: AppModel
     var body: some View {
         HStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 22) {
-                Image(nsImage: BrandGlyph.applicationIcon).resizable().scaledToFit()
-                    .frame(width: 40, height: 40).accessibilityLabel("1Tool")
-                    .padding(.horizontal, 12).padding(.top, 14)
-                VStack(spacing: 5) {
+            VStack(alignment: .leading, spacing: 20) {
+                BrandLogo(size: 48)
+                    .frame(maxWidth: .infinity).padding(.top, 18).padding(.bottom, 4)
+                VStack(spacing: 4) {
                     ForEach(ToolPage.allCases.filter { $0 != .appearance }) { page in nav(page) }
                 }
                 Spacer()
                 if model.awake.isActive {
-                    Label("正在保持唤醒", systemImage: "circle.fill")
+                    Label(L("Keeping Awake"), systemImage: "circle.fill")
                         .font(.system(size: 12)).foregroundStyle(accent).padding(.horizontal, 14)
                 }
                 VStack(alignment: .leading, spacing: 14) {
                     nav(.appearance)
                 }.padding(.bottom, 20)
             }
-            .padding(.horizontal, 12).frame(width: 200)
+            .padding(.horizontal, 10).frame(width: 208)
             .background(Theme.canvas)
             Divider()
             ScrollView {
@@ -47,14 +46,17 @@ struct MainView: View {
     }
     private func nav(_ page: ToolPage) -> some View {
         Button { model.page = page } label: {
-            HStack(spacing: 11) {
-                Image(systemName: page.symbol).font(.system(size: 17)).frame(width: 23)
-                Text(page.title).fontWeight(model.page == page ? .semibold : .regular)
+            HStack(spacing: 10) {
+                Image(systemName: page.symbol).symbolRenderingMode(.monochrome)
+                    .font(.system(size: 16, weight: .regular)).frame(width: 22, height: 22)
+                    .foregroundStyle(model.page == page ? accent : Color.secondary)
+                Text(page.title).font(.system(size: 13, weight: model.page == page ? .semibold : .regular))
+                    .fixedSize(horizontal: false, vertical: true).multilineTextAlignment(.leading)
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 12).padding(.vertical, 11)
+            .padding(.horizontal, 10).padding(.vertical, 9)
             .foregroundStyle(Color.primary)
-            .background(model.page == page ? accent.opacity(0.11) : .clear, in: RoundedRectangle(cornerRadius: 9))
+            .background(model.page == page ? accent.opacity(0.11) : .clear, in: RoundedRectangle(cornerRadius: 8))
             .contentShape(Rectangle())
         }.buttonStyle(.plain).accessibilityAddTraits(model.page == page ? .isSelected : [])
     }
@@ -103,51 +105,51 @@ struct AwakePage: View {
     @Environment(\.toolAccent) private var accent
     @Bindable var awake: KeepAwake
     @State private var duration = 60.0
-    private let durations: [(String, Double)] = [("30 分钟", 30), ("1 小时", 60), ("2 小时", 120), ("4 小时", 240), ("8 小时", 480), ("无限", 0)]
+    private let durations: [(String, Double)] = [(L("30 min"), 30), (L("1 hr"), 60), (L("2 hr"), 120), (L("4 hr"), 240), (L("8 hr"), 480), (L("Indefinitely"), 0)]
     var body: some View {
         ToolSection(title: "") {
             HStack(spacing: 16) {
                 Image(systemName: awake.isActive ? "cup.and.saucer.fill" : "cup.and.saucer")
                     .font(.system(size: 32)).foregroundStyle(awake.isActive ? accent : .secondary)
                 VStack(alignment: .leading, spacing: 5) {
-                    Text(awake.isActive ? "Mac 正在保持唤醒" : "按需唤醒，自在工作").font(.system(size: 16, weight: .semibold))
+                    Text(awake.isActive ? L("Your Mac is staying awake") : L("Ready when you are")).font(.system(size: 16, weight: .semibold))
                     if let end = awake.endDate {
                         TimelineView(.periodic(from: .now, by: 1)) { context in
                             let seconds = max(0, Int(end.timeIntervalSince(context.date)))
-                            Text(String(format: "剩余 %02d:%02d", seconds / 60, seconds % 60)).monospacedDigit().foregroundStyle(.secondary)
+                            Text(String(format: L("Time remaining %02d:%02d"), seconds / 60, seconds % 60)).monospacedDigit().foregroundStyle(.secondary)
                         }
-                    } else { HelpText(awake.isActive ? (awake.automatic ? "由电源规则自动开启" : "保持到你手动结束或退出 1Tool") : "计时结束后自动恢复正常休眠") }
+                    } else { HelpText(awake.isActive ? (awake.automatic ? L("Started by a power rule") : L("Until you stop the session or quit")) : L("Normal sleep resumes when the timer ends")) }
                 }
                 Spacer(minLength: 8)
-                Button(awake.isActive ? "结束" : "开始") {
+                Button(awake.isActive ? L("Stop") : L("Start")) {
                     if awake.isActive { awake.stop() } else { awake.start(minutes: duration == 0 ? nil : duration) }
                 }.modifier(PrimaryAction()).controlSize(.large)
             }
             Divider()
-            Picker("持续时间", selection: Binding(get: {
+            Picker(L("Duration"), selection: Binding(get: {
                 awake.isActive ? (awake.durationMinutes ?? 0) : duration
             }, set: { duration = $0 })) {
                 ForEach(durations, id: \.1) { item in
-                    if item.1 == 0 { Image(systemName: "infinity").accessibilityLabel("无限防休眠").tag(item.1) }
+                    if item.1 == 0 { Image(systemName: "infinity").accessibilityLabel(L("Keep Awake Indefinitely")).tag(item.1) }
                     else { Text(item.0).tag(item.1) }
                 }
             }.pickerStyle(.segmented).labelsHidden().disabled(awake.isActive)
             ErrorText(error: awake.error)
         }
-        ToolSection(title: "保持哪些状态") {
-            SettingToggle(title: "防止系统空闲休眠", value: $awake.preventSystem)
+        ToolSection(title: L("Sleep Prevention")) {
+            SettingToggle(title: L("Prevent Idle System Sleep"), value: $awake.preventSystem)
             Divider()
-            SettingToggle(title: "保持屏幕常亮", value: $awake.preventDisplay)
+            SettingToggle(title: L("Keep Display On"), value: $awake.preventDisplay)
             Divider()
-            SettingToggle(title: "防止磁盘空闲休眠", value: $awake.preventDisk)
+            SettingToggle(title: L("Prevent Idle Disk Sleep"), value: $awake.preventDisk)
             Divider()
-            SettingToggle(title: "防止系统休眠", subtitle: "仅在连接电源时生效", value: $awake.preventForcedSleep)
+            SettingToggle(title: L("Prevent System Sleep"), subtitle: L("Available when connected to power"), value: $awake.preventForcedSleep)
         }
-        ToolSection(title: "自动开启") {
-            SettingToggle(title: "连接电源时", value: $awake.onAC)
+        ToolSection(title: L("Start Automatically")) {
+            SettingToggle(title: L("On Power Adapter"), value: $awake.onAC)
             Divider()
-            SettingToggle(title: "使用电池时", value: $awake.onBattery)
-            HelpText("电源状态变化时应用规则。手动结束后，会等待下一次电源变化。合盖、关机和系统强制睡眠仍由 macOS 管理。")
+            SettingToggle(title: L("On Battery"), value: $awake.onBattery)
+            HelpText(L("Rules run when the power source changes. After a manual stop, they wait for the next change. macOS still manages lid closure, shutdown, and forced sleep."))
         }
     }
 }
@@ -170,31 +172,31 @@ struct KeyboardPage: View {
     @Environment(\.toolAccent) private var accent
     let keyboard: KeyboardLight
     var body: some View {
-        ToolSection(title: "内置键盘") {
+        ToolSection(title: L("Built-in Keyboard")) {
             HStack(spacing: 16) {
                 Image(systemName: "keyboard").font(.system(size: 28)).foregroundStyle(accent)
                 VStack(alignment: .leading, spacing: 5) {
-                    Text(keyboard.supported ? "键盘背光亮度" : "未检测到可调节的键盘背光").fontWeight(.medium)
-                    HelpText(keyboard.supported ? "拖动滑块立即调节" : "此功能需要支持背光的 Mac 内置键盘。")
+                    Text(keyboard.supported ? L("Backlight Brightness") : L("No adjustable keyboard backlight detected")).fontWeight(.medium)
+                    HelpText(keyboard.supported ? L("Drag the slider to adjust immediately") : L("Requires a Mac with a built-in backlit keyboard."))
                 }
             }.padding(.vertical, 4)
             if keyboard.supported {
-                LevelSlider(title: "键盘背光", value: Binding(get: { keyboard.level }, set: { keyboard.set($0) }))
+                LevelSlider(title: L("Keyboard Backlight"), value: Binding(get: { keyboard.level }, set: { keyboard.set($0) }))
                 HStack {
                     ForEach([0.0, 0.25, 0.5, 0.75, 1.0], id: \.self) { value in
-                        Button(value == 0 ? "关闭" : "\(Int(value * 100))%") { keyboard.set(value) }
+                        Button(value == 0 ? L("Off") : "\(Int(value * 100))%") { keyboard.set(value) }
                     }
                     Spacer()
                 }
                 if keyboard.autoSupported {
-                    SettingToggle(title: "根据环境光自动调节", value: Binding(get: { keyboard.automatic }, set: { keyboard.setAutomatic($0) }))
+                    SettingToggle(title: L("Adjust to Ambient Light"), value: Binding(get: { keyboard.automatic }, set: { keyboard.setAutomatic($0) }))
                 }
-                HelpText("手动调节会关闭环境光自动调节，可随时重新开启。")
+                HelpText(L("Manual changes turn off automatic adjustment. You can turn it back on anytime."))
             }
             HStack {
-                Button("重新检测", systemImage: "arrow.clockwise") { keyboard.refresh() }
+                Button(L("Detect Again"), systemImage: "arrow.clockwise") { keyboard.refresh() }
                 Spacer()
-                Button("键盘设置…") { NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.Keyboard-Settings.extension")!) }
+                Button(L("Keyboard Settings…")) { NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.Keyboard-Settings.extension")!) }
             }
             ErrorText(error: keyboard.error)
         }.onAppear { keyboard.refresh() }
@@ -206,41 +208,42 @@ struct DisplaysPage: View {
     let displays: Displays
     var body: some View {
         HStack {
-            Text("\(displays.screens.count) 块屏幕").foregroundStyle(.secondary)
+            Text(L("Connected Displays")).foregroundStyle(.secondary)
+            Text(displays.screens.count, format: .number).monospacedDigit().foregroundStyle(.secondary)
             Spacer()
             if displays.scanning { ProgressView().controlSize(.small) }
-            Button("刷新", systemImage: "arrow.clockwise") { displays.refresh() }.disabled(displays.scanning)
+            Button(L("Refresh"), systemImage: "arrow.clockwise") { displays.refresh() }.disabled(displays.scanning)
         }
         ForEach(displays.screens) { screen in
             ToolSection(title: "") {
                 HStack(spacing: 12) {
                     Image(systemName: screen.builtIn ? "laptopcomputer" : "display").font(.system(size: 28)).foregroundStyle(accent)
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(screen.name).fontWeight(.semibold)
-                        HelpText((screen.builtIn ? "内置显示器 · " : "外接显示器 · ") + screen.method.rawValue)
+                        Text(screen.title).fontWeight(.semibold)
+                        HelpText(LF(screen.builtIn ? "Built-in · %@" : "External · %@", screen.method.title))
                     }
                     Spacer()
-                    if screen.id == CGMainDisplayID() { Text("主屏幕").font(.caption).foregroundStyle(.secondary) }
+                    if screen.id == CGMainDisplayID() { Text(L("Main Display")).font(.caption).foregroundStyle(.secondary) }
                 }
-                LevelSlider(title: screen.name + "亮度", value: Binding(get: {
+                LevelSlider(title: LF("%@ Brightness", screen.title), value: Binding(get: {
                     displays.screens.first(where: { $0.id == screen.id })?.level ?? screen.level
                 }, set: { displays.set(screen.id, level: $0) }), disabled: displays.scanning || screen.method == .unavailable)
                 if screen.method == .software {
-                    HelpText("软件调暗改变画面亮度，不改变背光。退出时自动恢复；最低保留 12% 画面亮度。")
+                    HelpText(L("Software dimming changes the image, not the backlight. It restores on quit and keeps at least 12% brightness."))
                 } else if !screen.readable && screen.method == .ddc {
-                    HelpText("显示器接受 DDC 写入，但未返回亮度。百分比表示本次设置值，请观察屏幕确认；无变化时可改用软件调暗。")
+                    HelpText(L("The display accepts DDC commands but does not report brightness. The percentage shows the requested level. If nothing changes, try software dimming."))
                 }
-                Toggle("使用软件调暗", isOn: Binding(get: { displays.softwarePreferred(screen.key) }, set: {
+                Toggle(L("Use Software Dimming"), isOn: Binding(get: { displays.softwarePreferred(screen.key) }, set: {
                     displays.preferSoftware(screen.key, enabled: $0)
                 })).toggleStyle(.checkbox).disabled(displays.scanning)
                 ErrorText(error: screen.error)
             }
         }
         if displays.screens.isEmpty && !displays.scanning {
-            ContentUnavailableView("没有检测到屏幕", systemImage: "display", description: Text("连接显示器后点按刷新。"))
+            ContentUnavailableView(L("No Displays Detected"), systemImage: "display", description: Text(L("Connect a display, then click Refresh.")))
         }
-        Button("恢复软件调暗的屏幕", systemImage: "sun.max") { displays.restoreAllSoftware() }.disabled(displays.scanning)
-        HelpText("外接显示器需开启 DDC/CI。部分扩展坞、HDMI 转接器或虚拟屏幕可能只支持软件调暗。")
+        Button(L("Reset Software Dimming"), systemImage: "sun.max") { displays.restoreAllSoftware() }.disabled(displays.scanning)
+        HelpText(L("Enable DDC/CI on external displays. Some docks, HDMI adapters, and virtual displays only support software dimming."))
     }
 }
 
@@ -248,45 +251,45 @@ struct InputPage: View {
     @Bindable var input: InputSources
     var body: some View {
         ToolSection(title: "") {
-            SettingToggle(title: "启用默认输入法", subtitle: "切换应用时应用规则，随后仍可手动切换", value: $input.enabled)
+            SettingToggle(title: L("Enable Input Source Rules"), subtitle: L("Apply on app switch; you can still change the input source manually"), value: $input.enabled)
             Divider()
             HStack {
-                Text("当前输入法"); Spacer(); Text(input.currentName).foregroundStyle(.secondary)
+                Text(L("Current Input Source")); Spacer(); Text(input.currentName).foregroundStyle(.secondary)
             }
             HStack {
-                Text("全局默认"); Spacer()
-                sourcePicker("全局默认输入法", value: $input.fallback)
+                Text(L("Default Input Source")); Spacer()
+                sourcePicker(L("Default Input Source"), value: $input.fallback)
             }
-            SettingToggle(title: "切换时关闭大写锁定", value: $input.clearCapsLock)
+            SettingToggle(title: L("Turn Off Caps Lock on Switch"), value: $input.clearCapsLock)
         }
-        ToolSection(title: "应用专属规则") {
-            if input.rules.isEmpty { HelpText("为终端选择 ABC，为聊天软件选择中文输入法。应用专属规则优先于全局默认。") }
+        ToolSection(title: L("Per-App Rules")) {
+            if input.rules.isEmpty { HelpText(L("Choose an input source for each app. Per-app rules override the default.")) }
             ForEach($input.rules) { $rule in
                 HStack(spacing: 10) {
                     Image(nsImage: NSWorkspace.shared.icon(forFile: rule.path)).resizable().frame(width: 24, height: 24)
                     Text(rule.name).lineLimit(1)
                     Spacer(minLength: 8)
-                    sourcePicker(rule.name + "输入法", value: $rule.sourceID)
+                    sourcePicker(LF("%@ Input Source", rule.name), value: $rule.sourceID)
                     Button { input.rules.removeAll { $0.id == rule.id } } label: { Image(systemName: "minus.circle") }
-                        .buttonStyle(.borderless).help("移除 " + rule.name).accessibilityLabel("移除 " + rule.name)
+                        .buttonStyle(.borderless).help(LF("Remove %@", rule.name)).accessibilityLabel(LF("Remove %@", rule.name))
                 }
                 if rule.id != input.rules.last?.id { Divider() }
             }
-            Button("添加应用…", systemImage: "plus") { input.addApplication() }
+            Button(L("Add App…"), systemImage: "plus") { input.addApplication() }
         }
         HStack {
-            Button("刷新输入法", systemImage: "arrow.clockwise") { input.refresh() }
+            Button(L("Refresh Input Sources"), systemImage: "arrow.clockwise") { input.refresh() }
             Spacer()
-            Button("输入法设置…") { NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.Keyboard-Settings.extension")!) }
+            Button(L("Input Source Settings…")) { NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.Keyboard-Settings.extension")!) }
         }
-        HelpText("“跟随系统”会保留当前输入法。选择停用或移除的输入法时，1Tool 会提示你重新选择。")
+        HelpText(L("Follow System keeps the current input source. If a source becomes unavailable, choose another one."))
         ErrorText(error: input.error)
     }
     private func sourcePicker(_ title: String, value: Binding<String>) -> some View {
         Picker(title, selection: value) {
-            Text("跟随系统").tag("")
+            Text(L("Follow System")).tag("")
             if !value.wrappedValue.isEmpty && !input.sources.contains(where: { $0.id == value.wrappedValue }) {
-                Text("输入法不可用").tag(value.wrappedValue)
+                Text(L("Input Source Unavailable")).tag(value.wrappedValue)
             }
             ForEach(input.sources, id: \.id) { source in Text(source.name).tag(source.id) }
         }.labelsHidden().frame(width: 180).accessibilityLabel(title)
@@ -300,40 +303,41 @@ struct AppearancePage: View {
     @State private var editingIconName = false
     @AppStorage("appearance.activeDot") private var activeDot = true
     var body: some View {
+        LanguageControls()
         AppearanceControls()
-        ToolSection(title: "状态栏图标") {
+        ToolSection(title: L("Menu Bar Icon")) {
             HStack {
-                Text("图标").fontWeight(.medium)
+                Text(L("Icon")).fontWeight(.medium)
                 Spacer()
                 Image(nsImage: BrandGlyph.mark() ?? NSImage()).renderingMode(.template).frame(width: 40, height: 28)
                     .background(Color(nsColor: .windowBackgroundColor), in: RoundedRectangle(cornerRadius: 6))
             }
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 42, maximum: 48), spacing: 8)], alignment: .leading, spacing: 8) {
-                iconCell(name: "", title: "默认 Logo")
+                iconCell(name: "", title: L("Default Icon"))
                 ForEach(StatusIconSelection.gallery.filter { NSImage(systemSymbolName: $0, accessibilityDescription: nil) != nil }, id: \.self) { name in
                     iconCell(name: name, title: name)
                 }
             }
-            Button("其他图标…") { editingIconName = true }.font(.callout)
-            HelpText("默认使用 1Tool 扳手 Logo。可选择图库图标，或输入其他符号名称；留空恢复默认。")
+            Button(L("Other Icon…")) { editingIconName = true }.font(.callout)
+            HelpText(L("Choose an icon or enter an SF Symbol name. Leave it empty to restore the wrench."))
             Divider()
-            SettingToggle(title: "防休眠开启时显示状态圆点", value: $activeDot)
+            SettingToggle(title: L("Show Activity Dot While Keeping Awake"), value: $activeDot)
         }
         .popover(isPresented: $editingIconName) { IconNameEditor() }
-        ToolSection(title: "启动与运行") {
-            SettingToggle(title: "登录时启动 1Tool", value: Binding(get: { model.loginStatus == .enabled || model.loginStatus == .requiresApproval }, set: { model.setLogin($0) }))
+        ToolSection(title: L("Startup")) {
+            SettingToggle(title: L("Launch at Login"), value: Binding(get: { model.loginStatus == .enabled || model.loginStatus == .requiresApproval }, set: { model.setLogin($0) }))
             if model.loginStatus == .requiresApproval {
-                HStack { HelpText("请在系统设置中允许 1Tool 登录启动。"); Button("打开设置") { SMAppService.openSystemSettingsLoginItems() } }
+                HStack { HelpText(L("Allow launch at login in System Settings.")); Button(L("Open Settings")) { SMAppService.openSystemSettingsLoginItems() } }
             }
             ErrorText(error: model.loginError)
-            HelpText("关闭窗口后，1Tool 会继续在状态栏运行。退出应用会结束防休眠并恢复软件调暗。")
+            HelpText(L("Closing the window keeps the app in the menu bar. Quitting ends keep-awake sessions and resets software dimming."))
         }
         HStack {
             Spacer()
-            Button("开源许可") {
+            Button(L("Open Source Licenses")) {
                 if let url = Bundle.main.url(forResource: "LICENSE", withExtension: "txt") { NSWorkspace.shared.open(url) }
             }
-            Button("退出 1Tool") { NSApp.terminate(nil) }
+            Button(L("Quit 1Tool")) { NSApp.terminate(nil) }
         }.font(.callout)
     }
     private func iconCell(name: String, title: String) -> some View {
@@ -360,11 +364,11 @@ private struct IconNameEditor: View {
     @State private var openingName = ""
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("其他图标").font(.headline)
-            TextField("图标名称，例如 bolt.fill", text: $draft).textFieldStyle(.roundedBorder)
+            Text(L("Other Icon")).font(.headline)
+            TextField(L("Symbol name, such as bolt.fill"), text: $draft).textFieldStyle(.roundedBorder)
                 .onSubmit { dismiss() }
-            HelpText("留空恢复默认 Logo；无效名称会恢复打开前的选择。")
-            HStack { Spacer(); Button("完成") { dismiss() }.keyboardShortcut(.defaultAction) }
+            HelpText(L("Leave empty for the default icon. An invalid name restores your previous selection."))
+            HStack { Spacer(); Button(L("Done")) { dismiss() }.keyboardShortcut(.defaultAction) }
         }.padding(20).frame(width: 300)
             .onAppear { openingName = savedName; draft = savedName }
             .onChange(of: draft) {

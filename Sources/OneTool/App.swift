@@ -8,32 +8,32 @@ enum ToolPage: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .awake: return "防止休眠"
-        case .finder: return "超级右键"
-        case .keyboard: return "键盘背光"
-        case .displays: return "屏幕亮度"
-        case .input: return "默认输入法"
-        case .appearance: return "外观与启动"
+        case .awake: return L("Keep Awake")
+        case .finder: return L("Finder Actions")
+        case .keyboard: return L("Keyboard Backlight")
+        case .displays: return L("Display Brightness")
+        case .input: return L("Input Sources")
+        case .appearance: return L("General")
         }
     }
     var symbol: String {
         switch self {
         case .awake: return "cup.and.saucer"
         case .finder: return "cursorarrow.click.2"
-        case .keyboard: return "light.max"
-        case .displays: return "display.2"
-        case .input: return "character.cursor.ibeam"
-        case .appearance: return "slider.horizontal.3"
+        case .keyboard: return "keyboard"
+        case .displays: return "display"
+        case .input: return "globe"
+        case .appearance: return "gearshape"
         }
     }
     var subtitle: String {
         switch self {
-        case .awake: return "让 Mac 在需要的时候保持清醒。"
-        case .finder: return "把常用文件操作放进 Finder 右键菜单。"
-        case .keyboard: return "找到适合当前环境的键盘背光。"
-        case .displays: return "分别调节每一块屏幕，保持舒适的工作亮度。"
-        case .input: return "切换应用时，自动使用你习惯的输入法。"
-        case .appearance: return "让 1Tool 以你喜欢的方式待在状态栏。"
+        case .awake: return L("Keep your Mac awake when you need it.")
+        case .finder: return L("Your everyday file actions, right in Finder.")
+        case .keyboard: return L("Set a comfortable keyboard backlight level.")
+        case .displays: return L("Adjust each display independently.")
+        case .input: return L("Use your preferred input source in each app.")
+        case .appearance: return L("Personalize appearance, language, and startup.")
         }
     }
 }
@@ -95,10 +95,13 @@ enum ToolPage: String, CaseIterable, Identifiable {
     @State private var model = AppModel.shared
     @AppStorage("appearance.scheme") private var scheme = "system"
     @AppStorage("appearance.accent") private var accent = "blue"
+    @AppStorage(AppLanguage.preferenceKey) private var language = "system"
 
     var body: some Scene {
         Window("1Tool", id: "main") {
             AppRoot(model: model)
+                .id(language)
+                .environment(\.locale, Locale(identifier: AppLanguage.resolve(language)))
                 .preferredColorScheme(scheme == "dark" ? .dark : scheme == "light" ? .light : nil)
                 .environment(\.toolAccent, AppAccent.resolve(accent).color)
                 .tint(AppAccent.resolve(accent).color)
@@ -107,10 +110,10 @@ enum ToolPage: String, CaseIterable, Identifiable {
         .defaultSize(width: 940, height: 710)
         .windowToolbarStyle(.unifiedCompact)
         .commands {
-            CommandGroup(replacing: .appSettings) { OpenMainButton(title: "1Tool 设置…", page: .appearance).keyboardShortcut(",") }
+            CommandGroup(replacing: .appSettings) { OpenMainButton(title: L("Settings…"), page: .appearance).keyboardShortcut(",") }
             CommandGroup(after: .appSettings) {
-                Button("打开快捷面板") { delegate.showQuickPanel() }
-                Button("显示状态栏菜单") { delegate.showStatusMenu() }
+                Button(L("Show Quick Panel")) { delegate.showQuickPanel() }
+                Button(L("Show Status Menu")) { delegate.showStatusMenu() }
             }
         }
 

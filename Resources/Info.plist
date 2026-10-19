@@ -10,8 +10,9 @@
 <key>CFBundleShortVersionString</key><string>1.0.0</string>
 <key>CFBundleVersion</key><string>1</string>
 <key>LSMinimumSystemVersion</key><string>14.0</string>
+<key>CFBundleDevelopmentRegion</key><string>en</string>
 <key>NSHighResolutionCapable</key><true/>
-<key>NSAppleEventsUsageDescription</key><string>1Tool 通过你选择的右键操作，在终端打开文件夹或切换 Finder 隐藏文件显示。</string>
+<key>NSAppleEventsUsageDescription</key><string>1Tool opens folders in your chosen terminal and toggles hidden files in Finder when you choose these actions.</string>
 <key>LSApplicationCategoryType</key><string>public.app-category.utilities</string>
 <key>NSPrincipalClass</key><string>NSApplication</string>
 </dict></plist>

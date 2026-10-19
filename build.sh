@@ -13,7 +13,7 @@ xcrun swiftc -swift-version 5 -parse-as-library -O -target "$TARGET" -sdk "$SDK"
     "${SOURCES[@]}" -o "$APP/Contents/MacOS/OneTool"
 echo "Building Finder extension…"
 xcrun swiftc -swift-version 5 -parse-as-library -application-extension -O -target "$TARGET" -sdk "$SDK" \
-    Sources/FinderExtension/FinderSync.swift Sources/Shared/SuperRightClickSupport.swift \
+    Sources/FinderExtension/FinderSync.swift Sources/Shared/SuperRightClickSupport.swift Sources/Shared/Localization.swift \
     -framework FinderSync -framework AppKit -Xlinker -e -Xlinker _NSExtensionMain \
     -o "$EXT/Contents/MacOS/OneToolFinder"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
@@ -21,10 +21,17 @@ cp Resources/FinderExtension-Info.plist "$EXT/Contents/Info.plist"
 cp -R Resources/FileTemplates "$APP/Contents/Resources/"
 cp LICENSE "$APP/Contents/Resources/LICENSE.txt"
 cp NOTICE.md "$APP/Contents/Resources/NOTICE.md"
+mkdir -p "$EXT/Contents/Resources"
+xcrun xcstringstool compile Resources/Localizable.xcstrings --output-directory "$APP/Contents/Resources"
+xcrun xcstringstool compile Resources/InfoPlist.xcstrings --output-directory "$APP/Contents/Resources"
+for localization in "$APP/Contents/Resources/"*.lproj; do
+    mkdir -p "$EXT/Contents/Resources/$(basename "$localization")"
+    cp "$localization/Localizable.strings" "$EXT/Contents/Resources/$(basename "$localization")/"
+done
 if [[ ! -f build/MenuBarIcon.png || ! -f build/AppIcon.icns || Tools/Icon.swift -nt build/AppIcon.icns || Resources/Brand/logo.png -nt build/AppIcon.icns || Resources/Brand/AppIcon-Default.png -nt build/AppIcon.icns ]]; then
     xcrun swift Tools/Icon.swift build/AppIcon.iconset
 fi
-cp build/AppIcon.icns build/MenuBarIcon.png build/MenuBarIcon@2x.png build/BrandMark.png "$APP/Contents/Resources/"
+cp build/AppIcon.icns build/MenuBarIcon.png build/MenuBarIcon@2x.png "$APP/Contents/Resources/"
 IDENTITY="${CODE_SIGN_IDENTITY:-$(security find-identity -v -p codesigning | sed -n 's/.*"\(Apple Development:.*\)"/\1/p' | head -1)}"
 IDENTITY="${IDENTITY:--}"
 codesign --force --options runtime --entitlements Resources/FinderExtension.entitlements --sign "$IDENTITY" "$EXT"

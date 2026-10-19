@@ -38,6 +38,31 @@ import AppKit
         let templateData = try SuperRightClickTemplates.data(for: template, resourceDirectory: nil)
         check(templateData == Data("{}\n".utf8), "JSON template contents")
         let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+        check(AppLanguage.resolve("system", preferred: ["de-DE"]) == "de", "language follows regional system preference")
+        check(AppLanguage.resolve("system", preferred: ["zh-TW"]) == "zh-Hant", "traditional Chinese system language")
+        check(AppLanguage.resolve("system", preferred: ["zh-CN"]) == "zh-Hans", "simplified Chinese system language")
+        check(AppLanguage.resolve("ja", preferred: ["de-DE"]) == "ja", "manual language overrides system")
+        check(AppLanguage.resolve("invalid", preferred: ["it-IT"]) == "en", "unsupported language falls back to English")
+        let appBundle = Bundle(url: root.appendingPathComponent("build/1Tool.app"))!
+        let finderBundle = Bundle(url: appBundle.bundleURL.appendingPathComponent("Contents/PlugIns/OneToolFinder.appex"))!
+        let catalog = try JSONSerialization.jsonObject(with: Data(contentsOf: root.appendingPathComponent("Resources/Localizable.xcstrings"))) as! [String: Any]
+        let entries = catalog["strings"] as! [String: [String: Any]]
+        for language in AppLanguage.supported {
+            let bundles = [appBundle, finderBundle].map { AppLanguage.bundle(language: language, in: $0) }
+            check(bundles.allSatisfy { $0.bundlePath.hasSuffix(language + ".lproj") }, "host and Finder localization: " + language)
+            check(bundles.allSatisfy { bundle in entries.allSatisfy { key, entry in
+                guard let localizations = entry["localizations"] as? [String: [String: Any]],
+                      let unit = localizations[language]?["stringUnit"] as? [String: String],
+                      let value = unit["value"], !value.isEmpty else { return false }
+                return bundle.localizedString(forKey: key, value: nil, table: nil) == value
+            } }, "host and Finder compiled translations match catalog: " + language)
+        }
+        let legacy = "{\"enabled\":true,\"chinese\":true,\"directories\":[{\"id\":\"legacy\",\"name\":\"My Folder\",\"value\":\"/tmp\",\"content\":\"\"}]}"
+        let migrated = SuperRightClickIPC.decode(SuperRightClickConfiguration.self, from: legacy)
+        check(migrated?.enabled == true && migrated?.language == "system" && migrated?.directories.first?.id == "legacy", "language migration preserves existing Finder configuration")
+        var localizedConfig = SuperRightClickConfiguration()
+        localizedConfig.language = "fr"
+        check(SuperRightClickIPC.decode(SuperRightClickConfiguration.self, from: SuperRightClickIPC.encode(localizedConfig))?.language == "fr", "Finder IPC preserves chosen language")
         for ext in ["docx", "xlsx"] {
             let data = try SuperRightClickTemplates.data(for: .init(name: ext, value: ext), resourceDirectory: root.appendingPathComponent("Resources/FileTemplates"))
             check(data.starts(with: [0x50, 0x4b]), "real Office archive: " + ext)

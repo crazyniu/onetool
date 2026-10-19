@@ -75,16 +75,16 @@ final class OneToolFinderSync: FIFinderSync {
         }
         for group in config.visibleGroups {
             if group == .copyPath {
-                menu.addItem(item(group.title(chinese: config.chinese), action: "copyPath",
+                menu.addItem(item(group.title(language: config.language), action: "copyPath",
                                   image: menuIcon("link", color: .systemGreen)))
                 continue
             }
-            let parent = NSMenuItem(title: group.title(chinese: config.chinese), action: nil, keyEquivalent: "")
+            let parent = NSMenuItem(title: group.title(language: config.language), action: nil, keyEquivalent: "")
             let sub = NSMenu()
             switch group {
             case .newFile:
                 parent.image = menuIcon("doc.badge.plus", color: .systemGreen)
-                sub.addItem(item(config.chinese ? "输入文件名…" : "Choose File Name…", action: "newFile",
+                sub.addItem(item(L("Choose File Name…", language: config.language), action: "newFile",
                                  image: menuIcon("square.and.pencil", color: .systemOrange)))
                 for entry in config.templates {
                     sub.addItem(item(entry.name, action: "newFile", entry: entry.id,
@@ -103,7 +103,7 @@ final class OneToolFinderSync: FIFinderSync {
                                      image: menuImage(NSWorkspace.shared.icon(forFile: entry.value))))
                 }
                 if config.showHiddenToggle {
-                    sub.addItem(item(config.chinese ? "显示／隐藏隐藏文件" : "Show / Hide Hidden Files", action: "hiddenFiles",
+                    sub.addItem(item(L("Show / Hide Hidden Files", language: config.language), action: "hiddenFiles",
                                      image: menuIcon("eye", color: .systemPurple)))
                 }
             case .copyPath: break

@@ -43,10 +43,8 @@ func appIcon(_ size: Int) -> Data {
     png(width: size, height: size) { rect in
         let tile = rect.insetBy(dx: rect.width * 0.07, dy: rect.height * 0.07)
         let shape = NSBezierPath(roundedRect: tile, xRadius: rect.width * 0.19, yRadius: rect.height * 0.19)
-        NSGradient(starting: NSColor(calibratedRed: 0.12, green: 0.60, blue: 1, alpha: 1),
-            ending: NSColor(calibratedRed: 0.015, green: 0.23, blue: 0.82, alpha: 1))!.draw(in: shape, angle: -90)
-        NSColor.white.withAlphaComponent(0.35).setStroke()
-        shape.lineWidth = max(0.6, rect.width * 0.002); shape.stroke()
+        NSColor(calibratedRed: 0, green: 0.478, blue: 1, alpha: 1).setFill()
+        shape.fill()
         wrench(in: rect.insetBy(dx: rect.width * 0.225, dy: rect.height * 0.225), color: .white)
     }
 }
@@ -72,10 +70,6 @@ try icns.write(to: output.deletingLastPathComponent().appendingPathComponent("Ap
 try appIcon(1024).write(to: resources.appendingPathComponent("AppIcon-Default.png"))
 let mark = png(width: 256, height: 256) { wrench(in: $0, color: .black) }
 try mark.write(to: resources.appendingPathComponent("logo.png"))
-let wordmark = png(width: 160, height: 256) { _ in
-    wrench(in: NSRect(x: -48, y: 0, width: 256, height: 256), color: .black)
-}
-try wordmark.write(to: output.deletingLastPathComponent().appendingPathComponent("BrandMark.png"))
 for scale in [1, 2] {
     let glyph = png(width: 26 * scale, height: 20 * scale) { rect in
         let side = CGFloat(18 * scale)

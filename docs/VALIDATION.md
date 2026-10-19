@@ -54,3 +54,24 @@ UI：五个工具和外观页面均已打开检查，关键滑块、开关、菜
 | VoiceOver、所有键盘路径、其他系统版本和极端屏幕布局 | NOT RUN | 不由截图推断完整辅助功能或跨设备兼容 |
 
 原显示器、键盘、输入法与Finder底层有效PASS沿用上表记录，本次未重复全套硬件扰动。应用图标为Tools/Icon.swift绘制的原创竖直扳手，不包含参考项目品牌资产。
+
+
+## Flat branding and eight-language support
+
+2026-10-19 follow-up. User deferred Mac App Store/distribution work and requested the complete functionality first.
+
+| Item | Status | Evidence |
+| --- | --- | --- |
+| Final build, signature and installed binary | PASS | `build.sh`; `codesign --verify --deep --strict`; installed binary matches build |
+| Core/localization checks | PASS | 66 checks; all 212 translation keys compiled into both host and Finder extension for all eight languages; format placeholders checked; legacy Finder settings preserved |
+| Manual language switching | PASS | Native UI selected English, Simplified/Traditional Chinese, Japanese, Korean, French, German, Spanish; each reflected immediately in controls and navigation |
+| Language persistence and system default | PASS | German survived quit/relaunch; Follow System restored actual system language afterward |
+| Flat consistent logo | PASS | Same solid-blue/white upright-wrench asset in both headers; settings logo centered in 208-point rail; no text wordmark |
+| Settings/secondary pages | PASS | Six English pages, all Finder subpages, template editor; long German and other General-page translations inspected; theme-label column widened to 96 points |
+| Status panel | PASS | English screenshot confirms matching brand logo, 30m/1h/2h/4h/8h/∞ without clipping, localized built-in display title and readable labels |
+| Finder localization integration | PASS | Read-only live configuration probe received language=en, with four menu groups; compiled extension translations verified |
+| Physical native context-menu language | NOT RUN | Automation target changed between Finder windows/desktop; native context-menu clicks were not accepted as proof |
+| macOS standard UI language | System behavior | Standard app menus, permission panels and file-picker buttons follow macOS; system/input-method names retain their own localized names |
+| Store submission | NOT RUN | Deferred by the user; this remains the full functionality developer build |
+
+Raw local UI evidence and test output: `build/localization-audit/report.md`. Earlier hardware acceptance remains unchanged; no fresh hardware-combination claim is made by this UI/localization update.

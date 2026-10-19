@@ -47,7 +47,7 @@ import Observation
         panel.level = .popUpMenu
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         model.dismissQuickPanel = { [weak self] in self?.panel.orderOut(nil) }
-        panel.setAccessibilityTitle("1Tool 快捷面板")
+        panel.setAccessibilityTitle(L("1Tool Quick Panel"))
         outsideClick = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
             MainActor.assumeIsolated { self?.panel.orderOut(nil) }
         }
@@ -86,9 +86,10 @@ import Observation
         }
     }
     private func refreshAppearance() {
+        panel.setAccessibilityTitle(L("1Tool Quick Panel"))
         item.button?.image = BrandGlyph.image(active: model.awake.isActive,
             showDot: UserDefaults.standard.object(forKey: "appearance.activeDot") as? Bool ?? true)
-        item.button?.toolTip = model.awake.isActive ? "1Tool · 正在保持唤醒" : "1Tool · 左键快捷面板，右键菜单"
+        item.button?.toolTip = model.awake.isActive ? L("1Tool · Keeping Awake") : L("1Tool · Click for Quick Panel; right-click for menu")
         let scheme = UserDefaults.standard.string(forKey: "appearance.scheme") ?? "system"
         let appearance = scheme == "dark" ? NSAppearance(named: .darkAqua)
             : scheme == "light" ? NSAppearance(named: .aqua) : nil
@@ -126,20 +127,20 @@ import Observation
     }
     private func makeMenu() -> NSMenu {
         let menu = NSMenu()
-        menu.addItem(withTitle: model.awake.isActive ? "状态：已激活" : "状态：未激活", action: nil, keyEquivalent: "")
-        add(model.awake.isActive ? "结束防休眠" : "激活防休眠", to: menu, action: #selector(toggleAwake))
-        let duration = NSMenuItem(title: "定时激活…", action: nil, keyEquivalent: "")
+        menu.addItem(withTitle: model.awake.isActive ? L("Status: Active") : L("Status: Inactive"), action: nil, keyEquivalent: "")
+        add(model.awake.isActive ? L("Stop Keeping Awake") : L("Start Keeping Awake"), to: menu, action: #selector(toggleAwake))
+        let duration = NSMenuItem(title: L("Keep Awake For…"), action: nil, keyEquivalent: "")
         let options = NSMenu()
-        for (title, minutes) in [("30 分钟", 30), ("1 小时", 60), ("2 小时", 120), ("4 小时", 240), ("8 小时", 480), ("∞ 无限", 0)] {
+        for (title, minutes) in [(L("30 min"), 30), (L("1 hr"), 60), (L("2 hr"), 120), (L("4 hr"), 240), (L("8 hr"), 480), (L("∞ Indefinitely"), 0)] {
             let entry = NSMenuItem(title: title, action: #selector(startDuration(_:)), keyEquivalent: "")
             entry.target = self; entry.tag = minutes; options.addItem(entry)
         }
         duration.submenu = options; menu.addItem(duration)
         menu.addItem(.separator())
-        add("打开设置…", to: menu, action: #selector(openSettings), key: ",")
-        add("更换状态栏图标…", to: menu, action: #selector(openAppearance))
+        add(L("Open Settings…"), to: menu, action: #selector(openSettings), key: ",")
+        add(L("Change Menu Bar Icon…"), to: menu, action: #selector(openAppearance))
         menu.addItem(.separator())
-        add("退出 1Tool", to: menu, action: #selector(quit), key: "q")
+        add(L("Quit 1Tool"), to: menu, action: #selector(quit), key: "q")
         return menu
     }
     private func add(_ title: String, to menu: NSMenu, action: Selector, key: String = "") {
