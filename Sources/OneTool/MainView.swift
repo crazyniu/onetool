@@ -104,8 +104,6 @@ struct SettingToggle: View {
 struct AwakePage: View {
     @Environment(\.toolAccent) private var accent
     @Bindable var awake: KeepAwake
-    @State private var duration = 60.0
-    private let durations: [(String, Double)] = [(L("30 min"), 30), (L("1 hr"), 60), (L("2 hr"), 120), (L("4 hr"), 240), (L("8 hr"), 480), (L("Indefinitely"), 0)]
     var body: some View {
         ToolSection(title: "") {
             HStack(spacing: 16) {
@@ -122,34 +120,54 @@ struct AwakePage: View {
                 }
                 Spacer(minLength: 8)
                 Button(awake.isActive ? L("Stop") : L("Start")) {
-                    if awake.isActive { awake.stop() } else { awake.start(minutes: duration == 0 ? nil : duration) }
+                    if awake.isActive { awake.stop() } else { awake.startPreferredSession() }
                 }.modifier(PrimaryAction()).controlSize(.large)
             }
             Divider()
-            Picker(L("Duration"), selection: Binding(get: {
-                awake.isActive ? (awake.durationMinutes ?? 0) : duration
-            }, set: { duration = $0 })) {
-                ForEach(durations, id: \.1) { item in
-                    if item.1 == 0 { Image(systemName: "infinity").accessibilityLabel(L("Keep Awake Indefinitely")).tag(item.1) }
-                    else { Text(item.0).tag(item.1) }
-                }
-            }.pickerStyle(.segmented).labelsHidden().disabled(awake.isActive)
+            AwakeDurationPicker(awake: awake)
             ErrorText(error: awake.error)
         }
-        ToolSection(title: L("Sleep Prevention")) {
-            SettingToggle(title: L("Prevent Idle System Sleep"), value: $awake.preventSystem)
-            Divider()
+        ToolSection(title: "") {
             SettingToggle(title: L("Keep Display On"), value: $awake.preventDisplay)
-            Divider()
-            SettingToggle(title: L("Prevent Idle Disk Sleep"), value: $awake.preventDisk)
-            Divider()
-            SettingToggle(title: L("Prevent System Sleep"), subtitle: L("Available when connected to power"), value: $awake.preventForcedSleep)
         }
-        ToolSection(title: L("Start Automatically")) {
-            SettingToggle(title: L("On Power Adapter"), value: $awake.onAC)
+        ToolSection(title: "") {
+            DisclosureGroup(L("Start Automatically")) {
+                VStack(alignment: .leading, spacing: 10) {
+                    SettingToggle(title: L("On Power Adapter"), value: $awake.onAC)
+                    Divider()
+                    SettingToggle(title: L("On Battery"), value: $awake.onBattery)
+                    HelpText(L("Rules run when the power source changes. After a manual stop, they wait for the next change. macOS still manages lid closure, shutdown, and forced sleep."))
+                }.padding(.top, 8)
+            }
             Divider()
-            SettingToggle(title: L("On Battery"), value: $awake.onBattery)
-            HelpText(L("Rules run when the power source changes. After a manual stop, they wait for the next change. macOS still manages lid closure, shutdown, and forced sleep."))
+            DisclosureGroup(L("Advanced Sleep Options")) {
+                VStack(alignment: .leading, spacing: 10) {
+                    SettingToggle(title: L("Prevent Idle System Sleep"), subtitle: L("Prevent automatic sleep when your Mac is idle."), value: $awake.preventSystem)
+                    Divider()
+                    SettingToggle(title: L("Prevent Idle Disk Sleep"), value: $awake.preventDisk)
+                    Divider()
+                    SettingToggle(title: L("Prevent System Sleep"), subtitle: L("Available when connected to power"), value: $awake.preventForcedSleep)
+                    HelpText(L("macOS still controls lid closure, shutdown, and forced sleep."))
+                }.padding(.top, 8)
+            }
+        }
+    }
+}
+
+struct AwakeDurationPicker: View {
+    @Bindable var awake: KeepAwake
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack {
+                Text(L("Duration"))
+                Spacer(minLength: 8)
+                Picker(L("Duration"), selection: Binding(get: { awake.selectedDuration }, set: { awake.changeDuration($0) })) {
+                    ForEach(KeepAwake.durations, id: \.self) { minutes in
+                        Text(minutes == 0 ? L("Indefinitely") : minutes < 60 ? LF("%d min", Int(minutes)) : LF("%d hr", Int(minutes / 60))).tag(minutes)
+                    }
+                }.labelsHidden().frame(width: 180).accessibilityLabel(L("Duration"))
+            }
+            if awake.isActive { HelpText(L("Changing the duration restarts the timer.")) }
         }
     }
 }
@@ -304,12 +322,6 @@ struct AppearancePage: View {
         LanguageControls()
         AppearanceControls()
         ToolSection(title: L("Menu Bar Icon")) {
-            HStack {
-                Text(L("Icon")).fontWeight(.medium)
-                Spacer()
-                Image(nsImage: BrandGlyph.mark() ?? NSImage()).renderingMode(.template).frame(width: 40, height: 28)
-                    .background(Color(nsColor: .windowBackgroundColor), in: RoundedRectangle(cornerRadius: 6))
-            }
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 8), alignment: .leading, spacing: 8) {
                 ForEach(StatusIconSelection.gallery, id: \.self) { name in
                     iconCell(name: name, title: name.isEmpty ? L("Default Icon") : name)

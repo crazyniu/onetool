@@ -142,6 +142,31 @@ import AppKit
         check(BrightnessSupport.ddcCommandDelay(nowMicroseconds: 120_000, lastCommandEndMicroseconds: 100_000) == 30_000, "DDC minimum pacing")
         let assignments = BrightnessSupport.assignServices(scores: [(0, 1, 10), (0, 2, 2), (1, 1, 9), (1, 2, 8)])
         check(assignments[0] == 1 && assignments[1] == 2, "multi-display routes remain distinct")
+        let awakeSuite = "onetool-awake-checks-" + UUID().uuidString
+        let awakeDefaults = UserDefaults(suiteName: awakeSuite)!
+        defer { awakeDefaults.removePersistentDomain(forName: awakeSuite) }
+        awakeDefaults.set(true, forKey: "awake.system")
+        awakeDefaults.set(false, forKey: "awake.display")
+        awakeDefaults.set(true, forKey: "awake.disk")
+        awakeDefaults.set(false, forKey: "awake.forced")
+        awakeDefaults.set(false, forKey: "awake.ac")
+        awakeDefaults.set(false, forKey: "awake.battery")
+        awakeDefaults.set(120.0, forKey: "awake.duration")
+        let restoredAwake = KeepAwake(defaults: awakeDefaults)
+        check(restoredAwake.preventSystem && !restoredAwake.preventDisplay && restoredAwake.preventDisk && !restoredAwake.preventForcedSleep, "startup restores advanced sleep settings without overwriting them")
+        check(restoredAwake.preferredDuration == 120 && restoredAwake.selectedDuration == 120, "idle controls restore the saved duration")
+        restoredAwake.changeDuration(30)
+        check(!restoredAwake.isActive && restoredAwake.selectedDuration == 30, "choosing a duration while idle does not start a session")
+        restoredAwake.startPreferredSession()
+        check(restoredAwake.isActive && restoredAwake.durationMinutes == 30, "quick start uses the selected duration")
+        restoredAwake.changeDuration(60)
+        check(restoredAwake.isActive && restoredAwake.durationMinutes == 60 && abs((restoredAwake.endDate?.timeIntervalSinceNow ?? 0) - 3600) < 2, "changing duration while active restarts the timer from now")
+        restoredAwake.changeDuration(0)
+        check(restoredAwake.isActive && restoredAwake.endDate == nil && restoredAwake.selectedDuration == 0, "active controls can switch to indefinite without stopping first")
+        restoredAwake.stop()
+        check(KeepAwake(defaults: awakeDefaults).preferredDuration == 0, "selected duration survives restart")
+        restoredAwake.changeDuration(-1)
+        check(restoredAwake.preferredDuration == 0 && !restoredAwake.isActive, "unsupported durations leave the selected session unchanged")
         let defaults = UserDefaults.standard.dictionaryRepresentation().filter { $0.key.hasPrefix("awake.") }
         defer {
             for key in UserDefaults.standard.dictionaryRepresentation().keys where key.hasPrefix("awake.") { UserDefaults.standard.removeObject(forKey: key) }

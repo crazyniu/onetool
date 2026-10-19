@@ -8,7 +8,7 @@ A small, native macOS utility for everyday desktop tasks. Built with SwiftUI and
 
 ## Features
 
-- **Keep Awake:** timed sessions for 30 minutes or 1 / 2 / 4 / 8 hours, indefinite sessions, and optional power-source rules. Quitting releases the sleep assertions.
+- **Keep Awake:** timed sessions for 30 minutes or 1 / 2 / 4 / 8 hours, indefinite sessions, and optional power-source rules. Control sessions directly from the menu bar. Changing the duration while active restarts the timer; the selected duration is remembered. Quitting releases the sleep assertions.
 - **Finder Actions:** create files from templates, open favorite folders, copy paths, open folders in terminals or editors, and toggle hidden files.
 - **Keyboard Backlight:** brightness, quick levels and ambient-light adjustment on supported Macs.
 - **Display Brightness:** independent built-in / external display controls, DDC/CI support, and software dimming that restores the original curves on quit.
@@ -19,6 +19,7 @@ English, Simplified Chinese, Traditional Chinese, Japanese, Korean, French, Germ
 
 ## Screenshots
 
+![Menu bar quick panel](docs/images/quick-panel.png)
 ![Keep Awake](docs/images/keep-awake.png)
 ![Finder Actions](docs/images/finder-actions.png)
 ![Appearance](docs/images/appearance.png)

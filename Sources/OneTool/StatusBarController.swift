@@ -123,18 +123,18 @@ import Observation
     }
     private func makeMenu() -> NSMenu {
         let menu = NSMenu()
-        menu.addItem(withTitle: model.awake.isActive ? L("Status: Active") : L("Status: Inactive"), action: nil, keyEquivalent: "")
         add(model.awake.isActive ? L("Stop Keeping Awake") : L("Start Keeping Awake"), to: menu, action: #selector(toggleAwake))
-        let duration = NSMenuItem(title: L("Keep Awake For…"), action: nil, keyEquivalent: "")
+        let duration = NSMenuItem(title: model.awake.isActive ? L("Change Duration…") : L("Keep Awake For…"), action: nil, keyEquivalent: "")
         let options = NSMenu()
         for (title, minutes) in [(L("30 min"), 30), (L("1 hr"), 60), (L("2 hr"), 120), (L("4 hr"), 240), (L("8 hr"), 480), (L("∞ Indefinitely"), 0)] {
             let entry = NSMenuItem(title: title, action: #selector(startDuration(_:)), keyEquivalent: "")
-            entry.target = self; entry.tag = minutes; options.addItem(entry)
+            entry.target = self; entry.tag = minutes
+            entry.state = model.awake.selectedDuration == Double(minutes) ? .on : .off
+            options.addItem(entry)
         }
         duration.submenu = options; menu.addItem(duration)
         menu.addItem(.separator())
         add(L("Open Settings…"), to: menu, action: #selector(openSettings), key: ",")
-        add(L("Change Menu Bar Icon…"), to: menu, action: #selector(openAppearance))
         menu.addItem(.separator())
         add(L("Quit 1Tool"), to: menu, action: #selector(quit), key: "q")
         return menu
@@ -143,9 +143,12 @@ import Observation
         let entry = NSMenuItem(title: title, action: action, keyEquivalent: key)
         entry.target = self; menu.addItem(entry)
     }
-    @objc private func toggleAwake() { if model.awake.isActive { model.awake.stop() } else { model.awake.start() } }
-    @objc private func startDuration(_ sender: NSMenuItem) { model.awake.start(minutes: sender.tag == 0 ? nil : Double(sender.tag)) }
+    @objc private func toggleAwake() { if model.awake.isActive { model.awake.stop() } else { model.awake.startPreferredSession() } }
+    @objc private func startDuration(_ sender: NSMenuItem) {
+        let wasActive = model.awake.isActive
+        model.awake.changeDuration(Double(sender.tag))
+        if !wasActive { model.awake.startPreferredSession() }
+    }
     @objc private func openSettings() { model.openMainWindow?(.awake) }
-    @objc private func openAppearance() { model.openMainWindow?(.appearance) }
     @objc private func quit() { NSApp.terminate(nil) }
 }

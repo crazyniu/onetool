@@ -29,3 +29,5 @@ ARCHS="arm64 x86_64" ./build.sh
 GitHub 工作流会在 main 推送、版本标签或手动运行时自动生成通用 DMG，无需 Apple 证书或仓库 Secrets。main 构建提供 Actions 产物，版本标签同时创建带直接下载链接的 Release。应用与 Finder 扩展使用不依赖证书的临时签名，DMG 未经 Apple 签名或公证，首次启动可能需要在系统隐私与安全设置中允许。详见 [RELEASING.md](RELEASING.md)。
 
 GPL-3.0-or-later；上游来源和版权见 [NOTICE.md](NOTICE.md)。欢迎提交问题和 Pull Request。
+
+防休眠可直接在状态栏面板中开关和选择时长，右键菜单也保留直接控制。运行中更改时长会重新计时；自动启动和高级休眠选项收在设置页的折叠区域。

@@ -5,6 +5,8 @@ import IOKit.pwr_mgt
 import IOKit.ps
 
 @Observable final class KeepAwake {
+    static let durations: [Double] = [30, 60, 120, 240, 480, 0]
+    var preferredDuration = 60.0 { didSet { save() } }
     var preventSystem = true { didSet { save(); reconfigure() } }
     var preventDisplay = true { didSet { save(); reconfigure() } }
     var preventDisk = false { didSet { save(); reconfigure() } }
@@ -23,14 +25,21 @@ import IOKit.ps
     @ObservationIgnored private var wakeObserver: NSObjectProtocol?
     @ObservationIgnored private var powerInitialized = false
 
-    init() {
-        let d = UserDefaults.standard
+    @ObservationIgnored private var restoringPreferences = true
+    @ObservationIgnored private let defaults: UserDefaults
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        let d = defaults
         preventSystem = d.object(forKey: "awake.system") as? Bool ?? true
         preventDisplay = d.object(forKey: "awake.display") as? Bool ?? true
         preventDisk = d.bool(forKey: "awake.disk")
         preventForcedSleep = d.bool(forKey: "awake.forced")
         onAC = d.bool(forKey: "awake.ac")
         onBattery = d.bool(forKey: "awake.battery")
+        let savedDuration = d.object(forKey: "awake.duration") as? Double ?? 60
+        preferredDuration = Self.durations.contains(savedDuration) ? savedDuration : 60
+        restoringPreferences = false
         powerSource = IOPSNotificationCreateRunLoopSource({ context in
             guard let context else { return }
             let owner = Unmanaged<KeepAwake>.fromOpaque(context).takeUnretainedValue()
@@ -48,6 +57,17 @@ import IOKit.ps
         assertions.forEach { IOPMAssertionRelease($0) }
         if let powerSource { CFRunLoopRemoveSource(CFRunLoopGetMain(), powerSource, .commonModes) }
         if let wakeObserver { NSWorkspace.shared.notificationCenter.removeObserver(wakeObserver) }
+    }
+
+    var selectedDuration: Double { isActive ? (durationMinutes ?? 0) : preferredDuration }
+
+    func startPreferredSession() {
+        start(minutes: preferredDuration == 0 ? nil : preferredDuration)
+    }
+    func changeDuration(_ minutes: Double) {
+        guard Self.durations.contains(minutes) else { return }
+        preferredDuration = minutes
+        if isActive { startPreferredSession() }
     }
 
     func start(minutes: Double? = nil, automatic: Bool = false) {
@@ -118,12 +138,15 @@ import IOKit.ps
         applyPowerRule()
     }
     private func applyPowerRule() {
+        guard !restoringPreferences else { return }
         let requested = isOnAC ? onAC : onBattery
         if requested && !isActive { start(automatic: true) }
         else if !requested && automatic { stop() }
     }
     private func save() {
-        let d = UserDefaults.standard
+        guard !restoringPreferences else { return }
+        let d = defaults
+        d.set(preferredDuration, forKey: "awake.duration")
         d.set(preventSystem, forKey: "awake.system"); d.set(preventDisplay, forKey: "awake.display")
         d.set(preventDisk, forKey: "awake.disk"); d.set(preventForcedSleep, forKey: "awake.forced")
         d.set(onAC, forKey: "awake.ac"); d.set(onBattery, forKey: "awake.battery")

@@ -1,6 +1,24 @@
 # Validation
 
-## Settings and icon follow-up — October 19, 2026
+## Keep Awake controls follow-up — October 19, 2026
+
+| Check | Status | Evidence |
+| --- | --- | --- |
+| Local build and install | PASS | Apple Silicon build; app signature verifies; installed binary matches the build |
+| Core checks | PASS | `./test.sh`: 141 checks; added saved sleep-option restoration, saved duration, idle selection, selected-duration start, live duration change, indefinite mode and invalid-choice rejection |
+| Direct menu bar panel controls | PASS | Native panel: start with 1 hr, change to 30 min while active, stop, choose Indefinitely while idle, start again. End time and enabled state update correctly |
+| Shared settings state | PASS | Opening settings from the panel shows the same selected duration and active session; duration remains editable while active |
+| Progressive disclosure | PASS | Start Automatically and Advanced Sleep Options begin collapsed; expand to reveal the existing power, idle-system, disk and powered-system options. Values remain intact |
+| Redundant icon preview | PASS | General shows Menu Bar Icon followed directly by four rows of choices; separate Icon label and duplicate preview removed |
+| Native right-click menu | PARTIAL | Source retains direct Start/Stop and six duration choices with a checked selection and active Change Duration label. The native menu did not surface in the automation capture; its physical right-click path is not claimed as verified |
+| User state restored | PASS | Indefinite session restored through the menu bar panel; screen/system sleep assertions are active. Current accent, selected status symbol and hardware levels preserved |
+| New DMG / release | WAIVED | Local app replacement and code submission only; skip Actions on this commit |
+
+The sleep settings had the same startup overwrite defect as input rules: initialization invoked saving before the remaining values were read. A failing isolated-preferences check reproduced it; loading now completes before saving or applying automatic power rules. Settings and panel use one selected-duration model. The previous disabled segmented picker and six immediate-action buttons have been replaced by the same editable duration picker.
+
+Current screenshots are in `images/quick-panel.png`, `images/keep-awake.png` and `images/appearance.png`. The prior distribution and icon baselines below are historical results.
+
+## Settings and icon baseline — commit 338fdc1 (October 19, 2026)
 
 | Check | Status | Evidence |
 | --- | --- | --- |

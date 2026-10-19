@@ -19,22 +19,13 @@ struct QuickPanel: View {
                     Label(L("Keep Awake"), systemImage: "cup.and.saucer")
                     Spacer()
                     Toggle(L("Keep Awake"), isOn: Binding(get: { model.awake.isActive }, set: {
-                        if $0 { model.awake.start() } else { model.awake.stop() }
+                        if $0 { model.awake.startPreferredSession() } else { model.awake.stop() }
                     })).labelsHidden().toggleStyle(.switch).controlSize(.small)
                 }
                 if let end = model.awake.endDate {
                     HStack { Text(L("Ends At")).foregroundStyle(.secondary); Spacer(); Text(end, style: .time).monospacedDigit() }.font(.caption)
                 }
-                HStack(spacing: 6) {
-                    ForEach([30, 60, 120, 240, 480], id: \.self) { minutes in
-                        Button(minutes < 60 ? LF("%dm", minutes) : LF("%dh", minutes / 60)) { model.awake.start(minutes: Double(minutes)) }
-                            .font(.system(size: 12)).foregroundStyle(.primary).frame(maxWidth: .infinity)
-                            .help(minutes < 60 ? LF("%d min", minutes) : LF("%d hr", minutes / 60))
-                            .accessibilityLabel(minutes < 60 ? LF("%d min", minutes) : LF("%d hr", minutes / 60))
-                    }
-                    Button { model.awake.start() } label: { Image(systemName: "infinity") }
-                        .help(L("Keep Awake Indefinitely")).accessibilityLabel(L("Keep Awake Indefinitely"))
-                }.controlSize(.small)
+                AwakeDurationPicker(awake: model.awake)
                 ErrorText(error: model.awake.error)
                 Divider()
                 HStack { Label(L("Display Brightness"), systemImage: "display"); Spacer(); OpenMainButton(title: L("Manage"), page: .displays).buttonStyle(.bordered).foregroundStyle(.primary).controlSize(.small) }
@@ -57,7 +48,6 @@ struct QuickPanel: View {
                 Divider()
                 HStack { Label(model.input.currentName, systemImage: "globe").lineLimit(1); Spacer(); OpenMainButton(title: L("Input Sources"), page: .input).buttonStyle(.bordered).foregroundStyle(.primary).controlSize(.small) }.font(.caption)
                 HStack {
-                    OpenMainButton(title: L("Change Icon…"), page: .appearance).buttonStyle(.bordered).foregroundStyle(.primary).controlSize(.small)
                     Spacer()
                     Button(L("Quit")) { NSApp.terminate(nil) }.buttonStyle(.bordered).foregroundStyle(.primary).controlSize(.small)
                 }.font(.caption)
