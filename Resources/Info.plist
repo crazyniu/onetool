@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>CFBundleIdentifier</key><string>com.shopkivoo.onetool</string>
+<key>CFBundleName</key><string>1Tool</string>
+<key>CFBundleDisplayName</key><string>1Tool</string>
+<key>CFBundleExecutable</key><string>OneTool</string>
+<key>CFBundlePackageType</key><string>APPL</string>
+<key>CFBundleIconFile</key><string>AppIcon</string>
+<key>CFBundleShortVersionString</key><string>1.0.0</string>
+<key>CFBundleVersion</key><string>1</string>
+<key>LSMinimumSystemVersion</key><string>14.0</string>
+<key>NSHighResolutionCapable</key><true/>
+<key>NSAppleEventsUsageDescription</key><string>1Tool 通过你选择的右键操作，在终端打开文件夹或切换 Finder 隐藏文件显示。</string>
+<key>LSApplicationCategoryType</key><string>public.app-category.utilities</string>
+<key>NSPrincipalClass</key><string>NSApplication</string>
+</dict></plist>
