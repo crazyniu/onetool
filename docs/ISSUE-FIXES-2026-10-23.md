@@ -20,3 +20,11 @@
 Native evidence: `build/issue-native/input-alignment.png`, `uninstall-result.ax.txt`, `uninstall-result.png`, `npm-updates.ax.txt`, `npm-updates.png`. The preview app has a separate bundle identifier and was stopped after review.
 
 The snapshot excludes another chat's unfinished app-update feature. Source changes shared with that feature are staged selectively; its work is retained.
+
+## Delivered 1.0.2 (build 3)
+
+[Release v1.0.2](https://github.com/crazyniu/onetool/releases/tag/v1.0.2), code `87b382b15c8403455d046fa0ffef4c0ca71754be`, [successful tag workflow 39976673499](https://github.com/crazyniu/onetool/actions/runs/39976673499). CI passed universal build, 334 core/state checks, signing, notarization and publication; the 5 isolated npm lifecycle checks also passed locally.
+
+Downloaded Release DMG SHA-256 `213fa912a8b824b6bee561ebc53dcfc5a70d2426d5d2fde461dbdfec37b0cb25` matches the published checksum. DMG/app signatures, stapled tickets and Gatekeeper acceptance were verified. The official package was installed to `/Applications/1Tool.app`; its executable SHA-256 `c41fbb09d3fc88c13e0afe994196ac5b3f72dc2e3bf67dba495f200a7000dc9d` matches the mounted release app. The previous app is backed up at `build/1Tool-before-issue-fixes-1.0.2.app`; verification mount ejected.
+
+Formal installed-app review confirmed that the user's enabled input-source settings, WeChat global input source and iTerm/Termius ABC rules are retained, with the new control grouping. npm shows 12 installed packages and 8 updates without the earlier error. The original active indefinite keep-awake session and display-on setting were restored after normal quit/install/relaunch. The app is left on Input Sources for review. Native installed evidence: `build/issue-native/installed-{input,npm}.{png,ax.txt}`. The real app/permission acceptance limitations listed above remain applicable.
