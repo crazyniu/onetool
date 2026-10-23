@@ -9,9 +9,17 @@
 - **键盘背光**：亮度、快捷百分比和环境光自动调节。
 - **逐屏亮度**：内置屏幕、DDC/CI 外接显示器及软件调暗；退出时恢复原屏幕曲线。
 - **默认输入法**：全局默认、应用专属规则及可选 Caps Lock 关闭，修改自动保存并在重启后恢复。
-- **原生外观**：浅色／深色／自动主题、九种主色调、八种语言、四行排列的 32 个菜单栏图标和登录启动；防休眠开启时整枚图标变绿。
+- **垃圾清理**：环形磁盘图、应用缓存条形图，按应用或目录选择；保护运行中、最近使用及链接文件，默认移到废纸篓，也可明确选择永久删除。见 [清理范围](docs/CLEANUP.md)。
+- **应用卸载**：搜索已安装应用，预览并勾选关联数据，确认后移到废纸篓；保护系统应用、运行进程及共享数据，附带原路径恢复清单。见 [卸载范围](docs/UNINSTALL.md)。
+- **关于**：版本、项目源码、许可协议和参考项目。
+- **权限管理**：集中查看自动化、文件访问、Finder 扩展和登录项状态，提供明确的申请、设置与重新检测入口。
+- **包管理**：Homebrew formula／cask 与 npm 全局包的安装、卸载和升级，支持检查更新、全部升级、筛选和操作日志。见 [包管理说明](docs/PACKAGES.md)。
+- **原生外观**：苹果设置风格侧栏、九种应用主色、全局 Liquid Glass 开关、八种语言、32 个菜单栏图标和登录启动；防休眠开启时整枚图标变绿。
+- **系统主题**：外观页和状态栏右键菜单可切换 macOS 浅色、深色、自动模式，应用同步跟随。见 [系统外观与验证](docs/SYSTEM-APPEARANCE.md)。
 
-![防止休眠](docs/images/keep-awake.png)
+[![1Tool 英文版应用界面](docs/images/hero-en.png)](docs/images/app-en.png)
+
+基于应用真实英文截图制作，使用 AI 生成展示外框。[查看未经编辑的原始截图](docs/images/app-en.png)。
 
 需要 macOS 14+。正式 DMG 同时支持 Apple Silicon 与 Intel。
 
@@ -26,7 +34,7 @@ ARCHS="arm64 x86_64" ./build.sh
 
 应用仅在菜单栏显示图标，Dock 中不显示。通过菜单栏面板或图标右键菜单打开设置，关闭设置窗口后继续运行。
 
-GitHub 工作流会在 main 推送、版本标签或手动运行时自动生成通用 DMG，无需 Apple 证书或仓库 Secrets。main 构建提供 Actions 产物，版本标签同时创建带直接下载链接的 Release。应用与 Finder 扩展使用不依赖证书的临时签名，DMG 未经 Apple 签名或公证，首次启动可能需要在系统隐私与安全设置中允许。详见 [RELEASING.md](RELEASING.md)。
+GitHub 工作流自动构建通用 DMG。配置 Developer ID Application 证书和公证凭据后，会自动签名、公证并装订票据；缺少证书时保留明确标记的 unsigned 构建。Apple Development 开发证书不能替代正式分发证书。配置步骤见 [RELEASING.md](RELEASING.md)。
 
 GPL-3.0-or-later；上游来源和版权见 [NOTICE.md](NOTICE.md)。欢迎提交问题和 Pull Request。
 

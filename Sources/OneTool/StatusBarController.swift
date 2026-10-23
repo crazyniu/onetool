@@ -86,11 +86,10 @@ import Observation
         panel.setAccessibilityTitle(L("1Tool Quick Panel"))
         item.button?.image = BrandGlyph.image(active: model.awake.isActive)
         item.button?.toolTip = model.awake.isActive ? L("1Tool · Keeping Awake") : L("1Tool · Click for Quick Panel; right-click for menu")
-        let scheme = UserDefaults.standard.string(forKey: "appearance.scheme") ?? "system"
-        let appearance = scheme == "dark" ? NSAppearance(named: .darkAqua)
-            : scheme == "light" ? NSAppearance(named: .aqua) : nil
-        if NSApp.appearance?.name != appearance?.name { NSApp.appearance = appearance }
-        if panel.appearance?.name != appearance?.name { panel.appearance = appearance }
+        // Both windows inherit the live system appearance. Retired app-local
+        // theme preferences never change macOS during startup.
+        if NSApp.appearance != nil { NSApp.appearance = nil }
+        if panel.appearance != nil { panel.appearance = nil }
     }
     @objc private func clicked() {
         if NSApp.currentEvent?.type == .rightMouseUp {
@@ -134,6 +133,21 @@ import Observation
         }
         duration.submenu = options; menu.addItem(duration)
         menu.addItem(.separator())
+        model.systemTheme.refresh()
+        let appearance = NSMenuItem(title: L("System Appearance"), action: nil, keyEquivalent: "")
+        let themes = NSMenu()
+        for (index, mode) in SystemThemeMode.allCases.enumerated() {
+            let entry = NSMenuItem(title: mode.title, action: #selector(setSystemTheme(_:)), keyEquivalent: "")
+            entry.target = self; entry.tag = index
+            entry.state = model.systemTheme.state.mode == mode ? .on : .off
+            entry.isEnabled = model.systemTheme.canChange && !model.systemTheme.isChanging
+            themes.addItem(entry)
+        }
+        themes.autoenablesItems = false
+        themes.addItem(.separator())
+        add(L("System Settings…"), to: themes, action: #selector(openSystemAppearance))
+        appearance.submenu = themes; menu.addItem(appearance)
+        menu.addItem(.separator())
         add(L("Open Settings…"), to: menu, action: #selector(openSettings), key: ",")
         menu.addItem(.separator())
         add(L("Quit 1Tool"), to: menu, action: #selector(quit), key: "q")
@@ -149,6 +163,14 @@ import Observation
         model.awake.changeDuration(Double(sender.tag))
         if !wasActive { model.awake.startPreferredSession() }
     }
-    @objc private func openSettings() { model.openMainWindow?(.awake) }
+    @objc private func setSystemTheme(_ sender: NSMenuItem) {
+        guard SystemThemeMode.allCases.indices.contains(sender.tag) else { return }
+        Task {
+            await model.systemTheme.set(SystemThemeMode.allCases[sender.tag])
+            if model.systemTheme.error != nil { model.openMainWindow?(.appearance) }
+        }
+    }
+    @objc private func openSystemAppearance() { SystemTheme.openSettings() }
+    @objc private func openSettings() { model.openMainWindow?(.appearance) }
     @objc private func quit() { NSApp.terminate(nil) }
 }

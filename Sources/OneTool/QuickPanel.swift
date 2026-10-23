@@ -10,9 +10,9 @@ struct QuickPanel: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    BrandLogo(size: 32)
+                    BrandLogo(size: 26)
                     Spacer()
-                    OpenMainButton(title: L("Open Settings"), page: .awake).buttonStyle(.bordered).foregroundStyle(.primary).controlSize(.small)
+                    OpenMainButton(title: L("Open Settings"), page: .appearance, symbol: "gearshape").buttonStyle(.plain).foregroundStyle(.secondary)
                 }
                 Divider()
                 HStack {
@@ -45,13 +45,8 @@ struct QuickPanel: View {
                     LevelSlider(title: L("Keyboard Backlight"), value: Binding(get: { model.keyboard.level }, set: { model.keyboard.set($0) }))
                     ErrorText(error: model.keyboard.error)
                 }
-                Divider()
-                HStack { Label(model.input.currentName, systemImage: "globe").lineLimit(1); Spacer(); OpenMainButton(title: L("Input Sources"), page: .input).buttonStyle(.bordered).foregroundStyle(.primary).controlSize(.small) }.font(.caption)
-                HStack {
-                    Spacer()
-                    Button(L("Quit")) { NSApp.terminate(nil) }.buttonStyle(.bordered).foregroundStyle(.primary).controlSize(.small)
-                }.font(.caption)
-            }.padding(16)
+
+            }.padding(18)
                 .fixedSize(horizontal: false, vertical: true)
                 .background {
                     GeometryReader { geometry in
@@ -59,7 +54,6 @@ struct QuickPanel: View {
                     }
                 }
         }.frame(width: 365, height: panelHeight)
-            .background(Theme.canvas)
             .foregroundStyle(.primary)
             .onPreferenceChange(PanelContentHeight.self) { contentHeight in
                 guard contentHeight > 0 else { return }

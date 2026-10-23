@@ -4,100 +4,108 @@ import ServiceManagement
 
 struct MainView: View {
     @Environment(\.toolAccent) private var accent
+    @Environment(\.toolGlassEnabled) private var glass
+    @Environment(\.controlActiveState) private var activeState
     @Bindable var model: AppModel
     var body: some View {
-        HStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 20) {
-                BrandLogo(size: 48)
-                    .frame(maxWidth: .infinity).padding(.top, 18).padding(.bottom, 4)
-                VStack(spacing: 4) {
-                    ForEach(ToolPage.allCases.filter { $0 != .appearance }) { page in nav(page) }
-                }
-                Spacer()
-                if model.awake.isActive {
-                    Label(L("Keeping Awake"), systemImage: "circle.fill")
-                        .font(.system(size: 12)).foregroundStyle(accent).padding(.horizontal, 14)
-                }
-                VStack(alignment: .leading, spacing: 14) {
-                    nav(.appearance)
-                }.padding(.bottom, 20)
-            }
-            .padding(.horizontal, 10).frame(width: 208)
-            .background(Theme.canvas)
-            Divider()
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(model.page.title).font(.system(size: 24, weight: .semibold))
-                        Text(model.page.subtitle).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                    }.padding(.bottom, 2)
-                    switch model.page {
-                    case .awake: AwakePage(awake: model.awake)
-                    case .finder: FinderPage(service: model.finder)
-                    case .keyboard: KeyboardPage(keyboard: model.keyboard)
-                    case .displays: DisplaysPage(displays: model.displays)
-                    case .input: InputPage(input: model.input)
-                    case .appearance: AppearancePage(model: model)
+        NavigationSplitView {
+            VStack(alignment: .leading, spacing: 0) {
+                BrandLogo(size: 48).frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 12)
+                List {
+                    Section(L("Everyday Tools")) {
+                        ForEach([ToolPage.awake, .finder, .keyboard, .displays, .input]) { nav($0) }
                     }
-                }.padding(24).frame(maxWidth: 760, alignment: .leading).frame(maxWidth: .infinity)
-            }.background(Theme.canvas)
+                    Section(L("Storage & Apps")) {
+                        ForEach([ToolPage.cleanup, .uninstall, .brew, .npm]) { nav($0) }
+                    }
+                    Section(L("Settings")) {
+                        ForEach([ToolPage.appearance, .permissions, .about]) { nav($0) }
+                    }
+                }.listStyle(.sidebar).scrollContentBackground(.hidden)
+                    .onMoveCommand { direction in
+                        let pages = ToolPage.allCases
+                        guard let current = pages.firstIndex(of: model.page) else { return }
+                        if direction == .down { model.page = pages[min(current + 1, pages.count - 1)] }
+                        if direction == .up { model.page = pages[max(current - 1, 0)] }
+                    }
+            }
+            .background { if !glass { Theme.sidebar } }
+            .navigationSplitViewColumnWidth(min: 190, ideal: Layout.sidebarWidth, max: 280)
+        } detail: {
+            ScrollView {
+                VStack(alignment: .leading, spacing: Layout.sectionSpacing) {
+                    Text(model.page.subtitle).font(.body).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true).padding(.bottom, 4)
+                    Group {
+                        switch model.page {
+                        case .awake: AwakePage(awake: model.awake)
+                        case .finder: FinderPage(service: model.finder)
+                        case .keyboard: KeyboardPage(keyboard: model.keyboard)
+                        case .displays: DisplaysPage(displays: model.displays)
+                        case .input: InputPage(input: model.input)
+                        case .cleanup: CleanupPage(cleanup: model.cleanup)
+                        case .uninstall: UninstallPage(uninstaller: model.uninstaller)
+                        case .brew: PackageManagementPage(manager: model.brew).id(PackageProvider.brew)
+                        case .npm: PackageManagementPage(manager: model.npm).id(PackageProvider.npm)
+                        case .appearance: AppearancePage(model: model)
+                        case .permissions: PermissionsPage(model: model)
+                        case .about: AboutPage()
+                        }
+                    }
+                }.padding(Layout.pagePadding).frame(maxWidth: Layout.contentWidth, alignment: .leading)
+                    .frame(maxWidth: .infinity, alignment: .top)
+            }
+            .id(model.page)
+            .background(Theme.canvas)
+            .navigationTitle(model.page.title)
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button { model.page = .appearance } label: { Image(systemName: "gearshape") }
+                        .help(L("Open Settings")).accessibilityLabel(L("Open Settings"))
+                }
+            }
+            .modifier(ToolToolbarAppearance())
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if model.page == .cleanup && model.cleanup.scan != nil { CleanupActions(cleanup: model.cleanup) }
+                if model.page == .uninstall && model.uninstaller.plan != nil { UninstallActions(uninstaller: model.uninstaller) }
+                if model.page == .brew && model.brew.hasStatus { PackageOperationStatus(manager: model.brew).modifier(ToolActionBar()) }
+                if model.page == .npm && model.npm.hasStatus { PackageOperationStatus(manager: model.npm).modifier(ToolActionBar()) }
+            }
         }
-        .frame(minWidth: 840, minHeight: 620)
+        .navigationSplitViewStyle(.balanced)
+        .frame(minWidth: 880, minHeight: 660)
     }
     private func nav(_ page: ToolPage) -> some View {
-        Button { model.page = page } label: {
-            HStack(spacing: 10) {
-                Image(systemName: page.symbol).symbolRenderingMode(.monochrome)
-                    .font(.system(size: 16, weight: .regular)).frame(width: 22, height: 22)
-                    .foregroundStyle(model.page == page ? accent : Color.secondary)
-                Text(page.title).font(.system(size: 13, weight: model.page == page ? .semibold : .regular))
-                    .fixedSize(horizontal: false, vertical: true).multilineTextAlignment(.leading)
-                Spacer(minLength: 0)
-            }
-            .padding(.horizontal, 10).padding(.vertical, 9)
-            .foregroundStyle(model.page == page ? accent : Color.primary)
-            .background(model.page == page ? accent.opacity(0.11) : .clear, in: RoundedRectangle(cornerRadius: 8))
-            .contentShape(Rectangle())
-        }.buttonStyle(.plain).accessibilityAddTraits(model.page == page ? .isSelected : [])
+        SidebarNavigationRow(page: page, selected: model.page == page) { model.page = page }
+            .listRowInsets(EdgeInsets(top: 1, leading: 8, bottom: 1, trailing: 8))
+            .selectionDisabled()
     }
 }
 
-struct ToolSection<Content: View>: View {
-    let title: String
-    @ViewBuilder var content: Content
+private struct SidebarNavigationRow: View {
+    let page: ToolPage
+    let selected: Bool
+    let action: () -> Void
+    @AppStorage("appearance.accent") private var accentName = "blue"
+    @State private var hovering = false
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if !title.isEmpty { Text(title).font(.system(size: 13, weight: .semibold)).padding(.horizontal, 14) }
-            VStack(alignment: .leading, spacing: 10) { content }
-                .padding(14).frame(maxWidth: .infinity, alignment: .leading)
-                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14))
-        }
-    }
-}
-struct HelpText: View {
-    let text: String
-    init(_ text: String) { self.text = text }
-    var body: some View { Text(text).font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
-}
-struct ErrorText: View {
-    let error: String?
-    var body: some View {
-        if let error { Label(error, systemImage: "exclamationmark.triangle").font(.callout).foregroundStyle(.red).fixedSize(horizontal: false, vertical: true) }
-    }
-}
-struct SettingToggle: View {
-    let title: String
-    var subtitle: String? = nil
-    @Binding var value: Bool
-    var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                if let subtitle { HelpText(subtitle) }
-            }
-            Spacer(minLength: 8)
-            Toggle(title, isOn: $value).labelsHidden().toggleStyle(.switch).controlSize(.small).accessibilityLabel(title)
-        }
+        Button(action: action) {
+            HStack(spacing: 9) {
+                Image(systemName: page.symbol)
+                    .symbolRenderingMode(.monochrome)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(.white)
+                    .frame(width: 20, height: 20)
+                    .background(page.iconColor, in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+                    .accessibilityHidden(true)
+                Text(page.title).font(.body).foregroundStyle(selected ? Color.white : Color.primary).lineLimit(1)
+                Spacer(minLength: 0)
+            }.padding(.horizontal, 8).padding(.vertical, 4)
+                .background(selected ? AppAccent.resolve(accentName).selectionColor : hovering ? Color.primary.opacity(0.04) : .clear, in: RoundedRectangle(cornerRadius: 7))
+                .contentShape(Rectangle())
+        }.buttonStyle(.plain).help(page.title).onHover { hovering = $0 }
+            .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
 
@@ -108,7 +116,8 @@ struct AwakePage: View {
         ToolSection(title: "") {
             HStack(spacing: 16) {
                 Image(systemName: awake.isActive ? "cup.and.saucer.fill" : "cup.and.saucer")
-                    .font(.system(size: 32)).foregroundStyle(awake.isActive ? accent : .secondary)
+                    .font(.system(size: 24)).foregroundStyle(awake.isActive ? accent : .secondary)
+                    .frame(width: 48, height: 48).background(accent.opacity(0.07), in: RoundedRectangle(cornerRadius: 12))
                 VStack(alignment: .leading, spacing: 5) {
                     Text(awake.isActive ? L("Your Mac is staying awake") : L("Ready when you are")).font(.system(size: 16, weight: .semibold))
                     if let end = awake.endDate {
@@ -161,11 +170,13 @@ struct AwakeDurationPicker: View {
             HStack {
                 Text(L("Duration"))
                 Spacer(minLength: 8)
-                Picker(L("Duration"), selection: Binding(get: { awake.selectedDuration }, set: { awake.changeDuration($0) })) {
+                ChoiceMenu(title: L("Duration"), value: awake.selectedDuration == 0 ? L("Indefinitely") : awake.selectedDuration < 60 ? LF("%d min", Int(awake.selectedDuration)) : LF("%d hr", Int(awake.selectedDuration / 60)), width: 150) {
                     ForEach(KeepAwake.durations, id: \.self) { minutes in
-                        Text(minutes == 0 ? L("Indefinitely") : minutes < 60 ? LF("%d min", Int(minutes)) : LF("%d hr", Int(minutes / 60))).tag(minutes)
+                        Button { awake.changeDuration(minutes) } label: {
+                            Label(minutes == 0 ? L("Indefinitely") : minutes < 60 ? LF("%d min", Int(minutes)) : LF("%d hr", Int(minutes / 60)), systemImage: awake.selectedDuration == minutes ? "checkmark" : "")
+                        }
                     }
-                }.labelsHidden().frame(width: 180).accessibilityLabel(L("Duration"))
+                }
             }
             if awake.isActive { HelpText(L("Changing the duration restarts the timer.")) }
         }
@@ -238,7 +249,7 @@ struct DisplaysPage: View {
                     Image(systemName: screen.builtIn ? "laptopcomputer" : "display").font(.system(size: 28)).foregroundStyle(accent)
                     VStack(alignment: .leading, spacing: 4) {
                         Text(screen.title).fontWeight(.semibold)
-                        HelpText(LF(screen.builtIn ? "Built-in · %@" : "External · %@", screen.method.title))
+                        HelpText(screen.builtIn ? screen.method.title : LF("External · %@", screen.method.title))
                     }
                     Spacer()
                     if screen.id == CGMainDisplayID() { Text(L("Main Display")).font(.caption).foregroundStyle(.secondary) }
@@ -251,17 +262,23 @@ struct DisplaysPage: View {
                 } else if !screen.readable && screen.method == .ddc {
                     HelpText(L("The display accepts DDC commands but does not report brightness. The percentage shows the requested level. If nothing changes, try software dimming."))
                 }
-                Toggle(L("Use Software Dimming"), isOn: Binding(get: { displays.softwarePreferred(screen.key) }, set: {
-                    displays.preferSoftware(screen.key, enabled: $0)
-                })).toggleStyle(.checkbox).disabled(displays.scanning)
+                if screen.method == .software {
+                    HStack {
+                        Text(L("Software Dimming")).font(.caption).foregroundStyle(.secondary)
+                        Spacer()
+                        Button(L("Try Hardware Control")) { displays.preferSoftware(screen.key, enabled: false) }
+                            .controlSize(.small).disabled(displays.scanning)
+                    }
+                }
                 ErrorText(error: screen.error)
             }
         }
         if displays.screens.isEmpty && !displays.scanning {
             ContentUnavailableView(L("No Displays Detected"), systemImage: "display", description: Text(L("Connect a display, then click Refresh.")))
         }
-        Button(L("Reset Software Dimming"), systemImage: "sun.max") { displays.restoreAllSoftware() }.disabled(displays.scanning)
-        HelpText(L("Enable DDC/CI on external displays. Some docks, HDMI adapters, and virtual displays only support software dimming."))
+        if displays.screens.contains(where: { $0.method == .software }) {
+            Button(L("Reset Software Dimming"), systemImage: "sun.max") { displays.restoreAllSoftware() }.disabled(displays.scanning)
+        }
     }
 }
 
@@ -271,9 +288,6 @@ struct InputPage: View {
         ToolSection(title: "") {
             SettingToggle(title: L("Enable Input Source Rules"), subtitle: L("Apply on app switch; you can still change the input source manually"), value: $input.enabled)
             Divider()
-            HStack {
-                Text(L("Current Input Source")); Spacer(); Text(input.currentName).foregroundStyle(.secondary)
-            }
             HStack {
                 Text(L("Default Input Source")); Spacer()
                 sourcePicker(L("Default Input Source"), value: $input.fallback)
@@ -287,9 +301,9 @@ struct InputPage: View {
                     Image(nsImage: NSWorkspace.shared.icon(forFile: rule.path)).resizable().frame(width: 24, height: 24)
                     Text(rule.name).lineLimit(1)
                     Spacer(minLength: 8)
-                    sourcePicker(LF("%@ Input Source", rule.name), value: $rule.sourceID)
                     Button { [id = rule.id] in input.rules.removeAll { $0.id == id } } label: { Image(systemName: "minus.circle") }
                         .buttonStyle(.borderless).help(LF("Remove %@", rule.name)).accessibilityLabel(LF("Remove %@", rule.name))
+                    sourcePicker(LF("%@ Input Source", rule.name), value: $rule.sourceID)
                 }
                 if rule.id != input.rules.last?.id { Divider() }
             }
@@ -304,13 +318,15 @@ struct InputPage: View {
         ErrorText(error: input.error)
     }
     private func sourcePicker(_ title: String, value: Binding<String>) -> some View {
-        Picker(title, selection: value) {
-            Text(L("Follow System")).tag("")
-            if !value.wrappedValue.isEmpty && !input.sources.contains(where: { $0.id == value.wrappedValue }) {
-                Text(L("Input Source Unavailable")).tag(value.wrappedValue)
+        ChoiceMenu(title: title, value: value.wrappedValue.isEmpty ? L("Follow System") : input.sources.first(where: { $0.id == value.wrappedValue })?.name ?? L("Input Source Unavailable"), width: 180) {
+            Button(L("Follow System")) { value.wrappedValue = "" }
+            Divider()
+            ForEach(input.sources, id: \.id) { source in
+                Button { value.wrappedValue = source.id } label: {
+                    Label(source.name, systemImage: value.wrappedValue == source.id ? "checkmark" : "")
+                }
             }
-            ForEach(input.sources, id: \.id) { source in Text(source.name).tag(source.id) }
-        }.labelsHidden().frame(width: 180).accessibilityLabel(title)
+        }
     }
 }
 
@@ -320,7 +336,7 @@ struct AppearancePage: View {
     @AppStorage("appearance.icon") private var icon = ""
     var body: some View {
         LanguageControls()
-        AppearanceControls()
+        AppearanceControls(systemTheme: model.systemTheme)
         ToolSection(title: L("Menu Bar Icon")) {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 8), alignment: .leading, spacing: 8) {
                 ForEach(StatusIconSelection.gallery, id: \.self) { name in

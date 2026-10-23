@@ -74,8 +74,8 @@ struct InputRule: Codable, Identifiable, Equatable {
                 self.refresh()
                 return
             }
-            if self.clearCapsLock && !DefaultInputSourceCapsLock.clear() {
-                self.error = L("Input source applied, but Caps Lock could not be turned off. Check Accessibility permission.")
+            if self.clearCapsLock, case .failure(let failure) = DefaultInputSourceCapsLock.clearResult() {
+                self.error = failure.message
             }
             self.refresh()
         }

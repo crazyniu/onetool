@@ -16,6 +16,7 @@ import FinderSync
     @ObservationIgnored private var started = false
     @ObservationIgnored private var lastPublished: SuperRightClickConfiguration?
 
+    @ObservationIgnored var openPermissions: (() -> Void)?
     private(set) var extensionEnabled = false
     @ObservationIgnored private let fileQueue = DispatchQueue(label: "com.shopkivoo.onetool.finder-files", qos: .userInitiated)
 
@@ -160,7 +161,7 @@ import FinderSync
         let alert = NSAlert()
         alert.messageText = L("New File")
         alert.informativeText = directory.path
-        let field = NSTextField(string: template.map { "Untitled." + $0.value } ?? "Untitled.txt")
+        let field = NSTextField(string: SuperRightClickFiles.suggestedName(template.map { "Untitled." + $0.value } ?? "Untitled.txt", in: directory))
         field.frame = NSRect(x: 0, y: 0, width: 340, height: 24)
         alert.accessoryView = field
         alert.addButton(withTitle: L("Create"))
@@ -177,7 +178,7 @@ import FinderSync
                                                         resourceDirectory: Bundle.main.resourceURL?
                                                             .appendingPathComponent("FileTemplates")))
             DispatchQueue.main.async { self.busy = false; NSWorkspace.shared.activateFileViewerSelecting([url]) }
-        } catch { DispatchQueue.main.async { self.busy = false; self.fail(error.localizedDescription) } }
+        } catch { DispatchQueue.main.async { self.busy = false; self.fail((error as? POSIXError)?.code == .EEXIST ? L("A file with this name already exists. Choose another name.") : error.localizedDescription) } }
         }
     }
 
@@ -208,7 +209,13 @@ import FinderSync
             }
             workQueue.async {
                 let result = FinderAppleScript.runDetailed(source)
-                if !result.ok { DispatchQueue.main.async { self.fail(result.message) } }
+                if !result.ok {
+                    DispatchQueue.main.async {
+                        if let target = Self.automationFailureTarget(errorNumber: result.errorNumber, bundleID: id) {
+                            self.showAutomationDenied(target)
+                        } else { self.fail(result.message) }
+                    }
+                }
             }
         } else {
             NSWorkspace.shared.open([directory], withApplicationAt: app,
@@ -217,8 +224,30 @@ import FinderSync
             }
         }
     }
+    static func automationFailureTarget(errorNumber: Int?, bundleID: String?) -> String? {
+        guard errorNumber == Int(errAEEventNotPermitted) else { return nil }
+        switch bundleID {
+        case "com.apple.Terminal": return "Terminal"
+        case "com.googlecode.iterm2": return "iTerm2"
+        default: return nil
+        }
+    }
+    private func showAutomationDenied(_ target: String) {
+        let alert = NSAlert()
+        alert.messageText = L("Automation Permission Required")
+        alert.informativeText = LF("1Tool is not allowed to control %@. The terminal command was not sent. Open Permissions, enable Automation for this app, then retry the Finder action yourself.", target)
+        alert.addButton(withTitle: L("View Permissions"))
+        alert.addButton(withTitle: L("Cancel"))
+        NSApp.activate(ignoringOtherApps: true)
+        if alert.runModal() == .alertFirstButtonReturn {
+            if let openPermissions { openPermissions() }
+            else if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation") {
+                NSWorkspace.shared.open(url)
+            }
+        }
+    }
     private func fail(_ message: String) {
-        error = message
+        // Action failures belong to their modal, not a persistent settings-page error.
         let alert = NSAlert()
         alert.messageText = L("Finder Actions")
         alert.informativeText = message

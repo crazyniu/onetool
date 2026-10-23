@@ -1,6 +1,19 @@
 #!/bin/bash
 set -euo pipefail
 cd "$(dirname "$0")"
+IDENTITY="${CODE_SIGN_IDENTITY:-}"
+if [[ -z "$IDENTITY" ]]; then
+    IDENTITIES=$(security find-identity -v -p codesigning)
+    IDENTITY=$(printf '%s\n' "$IDENTITIES" | sed -n 's/.*"\(Developer ID Application:.*\)"/\1/p' | head -1)
+    if [[ -z "$IDENTITY" ]]; then
+        IDENTITY=$(printf '%s\n' "$IDENTITIES" | sed -n 's/.*"\(Apple Development:.*\)"/\1/p' | head -1)
+    fi
+fi
+IDENTITY="${IDENTITY:--}"
+if [[ "${RELEASE_SIGNING:-0}" == 1 && "$IDENTITY" != "Developer ID Application:"* ]]; then
+    echo 'Release signing requires a Developer ID Application certificate and its private key. Apple Development is only for development.' >&2
+    exit 1
+fi
 mkdir -p build
 ARCHS="${ARCHS:-$(uname -m)}"
 SDK="$(xcrun --show-sdk-path)"
@@ -45,14 +58,13 @@ if [[ ! -f build/MenuBarIcon.png || ! -f build/AppIcon.icns || Tools/Icon.swift 
 fi
 cp build/AppIcon.icns build/MenuBarIcon.png build/MenuBarIcon@2x.png "$APP/Contents/Resources/"
 cp build/AppIcon.icns "$EXT/Contents/Resources/"
-IDENTITY="${CODE_SIGN_IDENTITY:-$(security find-identity -v -p codesigning | sed -n 's/.*"\(Apple Development:.*\)"/\1/p' | head -1)}"
-IDENTITY="${IDENTITY:--}"
+
 SIGN_FLAGS=(--force --options runtime --sign "$IDENTITY")
 if [[ "$IDENTITY" != - ]]; then SIGN_FLAGS+=(--timestamp); fi
 codesign "${SIGN_FLAGS[@]}" --entitlements Resources/FinderExtension.entitlements "$EXT"
 codesign "${SIGN_FLAGS[@]}" --entitlements Resources/App.entitlements "$APP"
 codesign --verify --deep --strict "$APP"
-echo "Built: $APP"
+echo "Built: $APP (signing: $IDENTITY)"
 if [[ "${1:-}" == "--install" ]]; then
     DEST="/Applications/1Tool.app"
     if [[ -d "$DEST" ]]; then

@@ -11,6 +11,10 @@ import AppKit
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("onetool-checks-" + UUID().uuidString)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: dir) }
+        try PackageChecks.run(in: dir, check: { value, name in check(value, name) })
+        try PackageEnvironmentChecks.run(in: dir, check: { value, name in check(value, name) })
+        try CleanupChecks.run(in: dir, check: { value, name in check(value, name) })
+        try UninstallChecks.run(in: dir, check: { value, name in check(value, name) })
         let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
         let appBundle = Bundle(url: root.appendingPathComponent("build/1Tool.app"))!
         let finderBundle = Bundle(url: appBundle.bundleURL.appendingPathComponent("Contents/PlugIns/OneToolFinder.appex"))!
@@ -109,6 +113,9 @@ import AppKit
         check(SuperRightClickIPC.decode(SuperRightClickConfiguration.self, from: raw) == cfg, "Finder configuration round trip")
         check(SuperRightClickIPC.decode(SuperRightClickConfiguration.self, from: "{") == nil, "reject malformed IPC")
         check(SuperRightClickIPC.decode(SuperRightClickConfiguration.self, from: String(repeating: "x", count: 300_000)) == nil, "reject oversized IPC")
+        check(RightClick.automationFailureTarget(errorNumber: -1743, bundleID: "com.apple.Terminal") == "Terminal", "Automation denial identifies Terminal")
+        check(RightClick.automationFailureTarget(errorNumber: -1743, bundleID: "com.googlecode.iterm2") == "iTerm2", "Automation denial identifies iTerm2")
+        check(RightClick.automationFailureTarget(errorNumber: -1708, bundleID: "com.apple.Terminal") == nil, "Other AppleScript failures are not permission denial")
         check(RightClick.shellQuote("a'b") == "'a'\\''b'", "shell quote apostrophes")
         check(RightClick.appleScriptLiteral("a\"b\\c\n") == "\"a\\\"b\\\\c\\n\"", "AppleScript literal escaping")
         let rule = InputRule(id: "test.app", name: "Test", path: "/Applications/Test.app", sourceID: "zh")

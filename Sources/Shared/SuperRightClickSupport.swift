@@ -143,6 +143,18 @@ struct SuperRightClickRequest: Codable {
 }
 
 enum SuperRightClickFiles {
+    static func suggestedName(_ preferred: String, in directory: URL) -> String {
+        let url = URL(fileURLWithPath: preferred)
+        let ext = url.pathExtension
+        let stem = url.deletingPathExtension().lastPathComponent
+        for number in 1...1000 {
+            let name = number == 1 ? preferred : stem + " " + String(number) + (ext.isEmpty ? "" : "." + ext)
+            var info = stat()
+            if lstat(directory.appendingPathComponent(name).path, &info) != 0 && errno == ENOENT { return name }
+        }
+        return UUID().uuidString + (ext.isEmpty ? "" : "." + ext)
+    }
+
     static func validName(_ name: String) -> Bool {
         !name.isEmpty && name != "." && name != ".."
             && !name.contains("/") && !name.contains(":") && !name.contains("\0")

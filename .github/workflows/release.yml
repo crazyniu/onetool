@@ -13,11 +13,10 @@ jobs:
   package:
     if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     runs-on: macos-26
-    timeout-minutes: 30
+    timeout-minutes: 90
     permissions:
       contents: write
     env:
-      CODE_SIGN_IDENTITY: '-'
       ARCHS: arm64 x86_64
       PACKAGE_ARCH: universal
     steps:
@@ -27,19 +26,67 @@ jobs:
         run: |
           VERSION=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' Resources/Info.plist)
           [[ "$GITHUB_REF_NAME" == "v$VERSION" ]] || { echo 'Tag must match CFBundleShortVersionString.' >&2; exit 1; }
-      - name: Build universal app without an Apple certificate
+      - name: Configure signing
+        id: signing
+        env:
+          CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE_P12 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [[ -z "$CERTIFICATE" ]]; then
+            { echo 'CODE_SIGN_IDENTITY=-'; echo 'NOTARIZE=0'; } >> "$GITHUB_ENV"
+            echo 'suffix=unsigned' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          : "${CERTIFICATE_PASSWORD:?Missing MACOS_CERTIFICATE_PASSWORD}"
+          : "${APPLE_ID:?Missing APPLE_ID}"
+          : "${APPLE_APP_PASSWORD:?Missing APPLE_APP_PASSWORD}"
+          : "${APPLE_TEAM_ID:?Missing APPLE_TEAM_ID}"
+          KEYCHAIN="$RUNNER_TEMP/onetool-signing.keychain-db"
+          KEYCHAIN_PASSWORD=$(uuidgen)
+          printf '%s' "$CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/certificate.p12"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 7200 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/certificate.p12" -P "$CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
+          rm "$RUNNER_TEMP/certificate.p12"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" > /dev/null
+          security list-keychains -d user -s "$KEYCHAIN" "$HOME/Library/Keychains/login.keychain-db"
+          xcrun notarytool store-credentials onetool-release --keychain "$KEYCHAIN" --apple-id "$APPLE_ID" --password "$APPLE_APP_PASSWORD" --team-id "$APPLE_TEAM_ID"
+          {
+            echo 'RELEASE_SIGNING=1'
+            echo 'NOTARIZE=1'
+            echo 'NOTARY_PROFILE=onetool-release'
+            echo "NOTARY_KEYCHAIN=$KEYCHAIN"
+          } >> "$GITHUB_ENV"
+          echo 'suffix=notarized' >> "$GITHUB_OUTPUT"
+      - name: Build universal app
         run: ./build.sh
       - name: Core checks
         run: ./test.sh
-      - name: Package unsigned DMG
+      - name: Package and verify DMG
         run: Tools/package-dmg.sh
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: unsigned-dmg
-          path: dist/*unsigned.dmg*
+          name: ${{ steps.signing.outputs.suffix }}-dmg
+          path: dist/*.dmg*
           if-no-files-found: error
       - name: Publish tagged release
         if: startsWith(github.ref, 'refs/tags/')
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" dist/*unsigned.dmg dist/*unsigned.dmg.sha256 --verify-tag --title "1Tool $GITHUB_REF_NAME" --notes "Universal macOS app. No Apple signing certificate or notarization is included. The app and Finder extension use certificate-free ad-hoc code signatures. Requires macOS 14 or later."
+          PACKAGE_KIND: ${{ steps.signing.outputs.suffix }}
+        run: |
+          if [[ "$PACKAGE_KIND" == notarized ]]; then
+            printf '%s\n' 'Universal macOS app for macOS 14+. Developer ID signed, notarized by Apple, and stapled for offline verification.' > "$RUNNER_TEMP/release-notes.md"
+          else
+            printf '%s\n' 'Universal macOS app for macOS 14+. This build uses ad-hoc signatures and has no Apple notarization. See RELEASING.md for first launch instructions.' > "$RUNNER_TEMP/release-notes.md"
+          fi
+          gh release create "$GITHUB_REF_NAME" dist/*.dmg dist/*.dmg.sha256 --verify-tag --title "1Tool $GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/release-notes.md"
+      - name: Remove temporary signing material
+        if: always()
+        run: |
+          security delete-keychain "$RUNNER_TEMP/onetool-signing.keychain-db" 2>/dev/null || true
+          rm -f "$RUNNER_TEMP/certificate.p12"

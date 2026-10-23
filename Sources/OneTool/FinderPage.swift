@@ -17,7 +17,9 @@ struct FinderPage: View {
                 Spacer()
                 Button(service.extensionEnabled ? L("Manage Extension…") : L("Enable Extension…")) { service.openExtensionSettings() }
             }
-            HelpText(L("Enable the 1Tool Finder extension, then open a new Finder window. If actions are missing, turn the extension off and on again."))
+            if !service.extensionEnabled {
+                HelpText(L("Enable the 1Tool Finder extension, then open a new Finder window. If actions are missing, turn the extension off and on again."))
+            }
         }
         Picker(L("Finder Action Settings"), selection: $tab) {
             Text(L("Menu Items")).tag(0); Text(L("File Templates")).tag(1); Text(L("Folders & Apps")).tag(2)

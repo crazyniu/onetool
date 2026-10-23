@@ -16,3 +16,9 @@ BlackHoleGlyph and StatusItemController. ICNS packing in Tools/Icon.swift is
 adapted from its MakeIcon.swift. Copyright (C) 2026 Vorssaint.
 The 1Tool wrench artwork in Tools/Icon.swift and Resources/Brand is original
 to this project. No reference-project brand assets are included.
+
+The cleanup and app-uninstaller features are independent Swift implementations. Their bounded scanning,
+review-before-delete and recoverability design was informed by Mole
+(https://github.com/tw93/Mole, GPL-3.0) and PureMac
+(https://github.com/momenbasel/PureMac, MIT). No source code or assets from either
+project are bundled. These references do not imply affiliation or endorsement.
