@@ -59,7 +59,10 @@ enum BrandGlyph {
         let scale = min(symbolHeight / ink.height, (pointSize.width - 2) / ink.width)
         let drawSize = NSSize(width: symbol.size.width * scale,
                               height: symbol.size.height * scale)
-        guard ink.width * scale >= 8, ink.height * scale >= 14 else { return nil }
+        // SF Symbols artwork varies by macOS version. Broad glyphs such as
+        // puzzlepiece.fill can be shorter when fitted to the 20-point width.
+        // Keep a readable 12-point minimum while still rejecting thin marks.
+        guard ink.width * scale >= 8, ink.height * scale >= 12 else { return nil }
         // Center visible ink rather than the symbol's padded box.
         let inkOrigin = NSPoint(x: ink.minX * scale, y: ink.minY * scale)
         let inkSize = NSSize(width: ink.width * scale, height: ink.height * scale)
