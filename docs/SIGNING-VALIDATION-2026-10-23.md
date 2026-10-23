@@ -33,3 +33,9 @@ Download the [notarized-dmg artifact](https://github.com/crazyniu/onetool/action
 - Verification mount ejected; downloaded evidence is in `build/signing-setup/github-artifact/`.
 
 The local and CI package checksums differ because they are separately compiled/signed artifacts. Both passed notarization and Gatekeeper validation. This manual main-branch workflow uploads an Actions artifact; it does not create a version-tagged GitHub Release. No credentials are included in these public validation notes.
+
+## Published Release v1.0.1
+
+[Release v1.0.1](https://github.com/crazyniu/onetool/releases/tag/v1.0.1) is published, non-draft and non-prerelease. The pre-existing v1.0.0 tag was preserved; the new v1.0.1 tag points to `79fc0ca476678a83126a6160a39d3ff72abdd87a`, which changes only the app and Finder extension versions to 1.0.1, build 2. [Tag workflow 39971687328](https://github.com/crazyniu/onetool/actions/runs/39971687328) passed build, 327 checks, signing, notarization, packaging and Release publication.
+
+The published assets are `1Tool-1.0.1-universal-notarized.dmg` and its `.sha256` file. The actual Release download was independently verified: matching SHA-256 `7da1bfe133111b1249e648a163345f91bb8c1fa841a24e6e91cd81980a721a90`, valid Developer ID DMG/app signatures, stapled tickets and successful Gatekeeper assessments. The mounted app reports 1.0.1; the mount was ejected. Downloaded verification evidence is under `build/release-1.0.1/`.
