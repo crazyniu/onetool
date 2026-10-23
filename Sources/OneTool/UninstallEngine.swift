@@ -363,7 +363,8 @@ struct UninstallEngine: Sendable {
     }
 
     func uninstall(_ plan: UninstallPlan, selected: Set<String>, installed: [UninstallApp],
-                   activity: () throws -> UninstallActivity = { try .live() }, cancelled: () -> Bool = { false }) throws -> UninstallResult {
+                   activity: () throws -> UninstallActivity = { try .live() }, cancelled: () -> Bool = { false },
+                   applicationTrash: ((URL) throws -> URL)? = nil) throws -> UninstallResult {
         guard protection(for: plan.app) == nil, selected.contains(plan.app.id),
               let current = Self.application(at: plan.app.url), current.bundleID == plan.app.bundleID else { throw CocoaError(.fileWriteNoPermission) }
         // Re-derive the allowlist. Never trust an arbitrary path supplied by a UI or stale plan.
@@ -380,9 +381,13 @@ struct UninstallEngine: Sendable {
         defer { close(recoveryFD) }
         var result = UninstallResult()
         do {
-            let manifest = items.enumerated().map { ["original": $0.element.url.path, "stored": String(format: "%03d-", $0.offset) + $0.element.url.lastPathComponent] }
-            let data = try JSONSerialization.data(withJSONObject: ["application": plan.app.bundleID, "items": manifest] as [String: Any], options: [.prettyPrinted, .sortedKeys])
-            try data.write(to: recovery.appendingPathComponent("1Tool-Uninstall-Recovery.json"), options: .withoutOverwriting)
+            var manifest = items.enumerated().map { ["original": $0.element.url.path, "stored": String(format: "%03d-", $0.offset) + $0.element.url.lastPathComponent] }
+            let manifestURL = recovery.appendingPathComponent("1Tool-Uninstall-Recovery.json")
+            func saveManifest(initial: Bool = false) throws {
+                let data = try JSONSerialization.data(withJSONObject: ["application": plan.app.bundleID, "items": manifest] as [String: Any], options: [.prettyPrinted, .sortedKeys])
+                try data.write(to: manifestURL, options: initial ? .withoutOverwriting : .atomic)
+            }
+            try saveManifest(initial: true)
             for (index, item) in items.enumerated() {
                 if cancelled() { result.cancelled = true; break }
                 do {
@@ -398,11 +403,23 @@ struct UninstallEngine: Sendable {
                           info.st_mode == stamp.mode, info.st_ctimespec.tv_sec == stamp.changed,
                           info.st_ctimespec.tv_nsec == stamp.changedNanos else { throw UninstallError.changed }
                     let destination = String(format: "%03d-", index) + item.url.lastPathComponent
-                    guard renameatx_np(parent, item.url.lastPathComponent, recoveryFD, destination, UInt32(RENAME_EXCL)) == 0 else {
-                        throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EACCES)
+                    if renameatx_np(parent, item.url.lastPathComponent, recoveryFD, destination, UInt32(RENAME_EXCL)) != 0 {
+                        let failure = errno
+                        // Only the selected, validated app may use the system's
+                        // interactive Trash operation. Never elevate data-folder moves.
+                        guard index == 0, failure == EACCES || failure == EPERM, let applicationTrash else {
+                            throw POSIXError(POSIXErrorCode(rawValue: failure) ?? .EACCES)
+                        }
+                        let trashed = try applicationTrash(item.url)
+                        result.moved.append(item.url)
+                        manifest[index].removeValue(forKey: "stored")
+                        manifest[index]["trashed"] = trashed.path
+                        try saveManifest()
+                        continue
                     }
                     result.moved.append(item.url)
                 } catch is CancellationError { result.cancelled = true; break }
+                catch let error as CocoaError where error.code == .userCancelled { result.cancelled = true; break }
                 catch {
                     result.failures.append(item.url.path + ": " + error.localizedDescription)
                     result.problems.append(.capture(error, at: item.url))

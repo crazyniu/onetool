@@ -178,11 +178,23 @@ struct PackageEngine: Sendable {
     var prefix: String? = nil
 
     func run(_ arguments: [String], timeout: TimeInterval = 120, output: @Sendable (String) -> Void = { _ in }) throws -> PackageCommandResult {
+        var childEnvironment = environment
+        if provider == .npm {
+            let cache = npmCacheURL
+            try FileManager.default.createDirectory(at: cache, withIntermediateDirectories: true)
+            childEnvironment["npm_config_cache"] = cache.path
+            childEnvironment["NPM_CONFIG_CACHE"] = nil
+        }
         let resolved = URL(fileURLWithPath: executable).resolvingSymlinksInPath().path
         if provider == .npm, let nodeExecutable, resolved.hasSuffix(".js") {
-            return try PackageProcess.run(nodeExecutable, [resolved] + arguments, environment: environment, timeout: timeout, output: output)
+            return try PackageProcess.run(nodeExecutable, [resolved] + arguments, environment: childEnvironment, timeout: timeout, output: output)
         }
-        return try PackageProcess.run(executable, arguments, environment: environment, timeout: timeout, output: output)
+        return try PackageProcess.run(executable, arguments, environment: childEnvironment, timeout: timeout, output: output)
+    }
+
+    var npmCacheURL: URL {
+        let home = environment["HOME"].map { URL(fileURLWithPath: $0) } ?? FileManager.default.homeDirectoryForCurrentUser
+        return home.appendingPathComponent("Library/Caches/com.shopkivoo.onetool/npm", isDirectory: true)
     }
 
     static func discover(_ provider: PackageProvider, override: String? = nil) throws -> Self? {
@@ -251,7 +263,8 @@ struct PackageEngine: Sendable {
             if resolved.hasSuffix(".js") { command = [nodeExecutable, resolved] }
         }
         if provider == .npm, let prefix { command += ["--prefix", prefix] }
-        return pathAssignment + (command + (try arguments(for: action, name: name, kind: kind))).map(quote).joined(separator: " ")
+        let cacheAssignment = provider == .npm ? "env -u NPM_CONFIG_CACHE npm_config_cache=" + quote(npmCacheURL.path) + " " : ""
+        return cacheAssignment + pathAssignment + (command + (try arguments(for: action, name: name, kind: kind))).map(quote).joined(separator: " ")
     }
 
     func installed() throws -> [ManagedPackage] { try inventory().packages }

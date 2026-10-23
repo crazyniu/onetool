@@ -27403,6 +27403,165 @@
           }
         }
       }
+    },
+    "App Management": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App Management"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "应用管理"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "應用程式管理"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App-Verwaltung"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestión de apps"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestion des apps"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アプリ管理"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "앱 관리"
+          }
+        }
+      }
+    },
+    "Allow 1Tool to remove applications installed by other apps. macOS may also request administrator approval.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow 1Tool to remove applications installed by other apps. macOS may also request administrator approval."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "允许 1Tool 移除由其他应用安装的应用。macOS 也可能要求管理员确认。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "允許 1Tool 移除由其他 App 安裝的應用程式。macOS 也可能要求管理員確認。"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erlaube 1Tool, von anderen Apps installierte Apps zu entfernen. macOS kann eine Administratorbestätigung anfordern."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permite que 1Tool elimine apps instaladas por otras apps. macOS también puede solicitar autorización de administrador."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Autorisez 1Tool à supprimer les apps installées par d’autres apps. macOS peut aussi demander une autorisation administrateur."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "他のアプリがインストールしたアプリを1Toolが削除できるようにします。macOSが管理者の承認を求める場合もあります。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "다른 앱이 설치한 앱을 1Tool이 제거하도록 허용합니다. macOS에서 관리자 승인을 요청할 수도 있습니다."
+          }
+        }
+      }
+    },
+    "Some app containers require Full Disk Access. After changing access, quit and reopen 1Tool, then scan again. Unselected data stays in place.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Some app containers require Full Disk Access. After changing access, quit and reopen 1Tool, then scan again. Unselected data stays in place."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "部分应用容器需要完全磁盘访问权限。更改授权后，请退出并重新打开 1Tool，再重新扫描。未勾选的数据会保留。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "部分 App 容器需要完整磁碟存取權。更改授權後，請結束並重新開啟 1Tool，再重新掃描。未勾選的資料會保留。"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einige App-Container benötigen Festplattenvollzugriff. Beende und öffne 1Tool nach einer Berechtigungsänderung erneut und scanne noch einmal. Nicht ausgewählte Daten bleiben erhalten."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Algunos contenedores requieren acceso total al disco. Tras cambiar el acceso, cierra y abre 1Tool y vuelve a analizar. Los datos no seleccionados se conservan."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Certains conteneurs nécessitent l’accès complet au disque. Après autorisation, quittez et rouvrez 1Tool, puis relancez l’analyse. Les données non sélectionnées sont conservées."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一部のアプリコンテナにはフルディスクアクセスが必要です。アクセス権を変更したら1Toolを終了して開き直し、再スキャンしてください。未選択のデータは保持されます。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "일부 앱 컨테이너는 전체 디스크 접근 권한이 필요합니다. 권한을 변경한 후 1Tool을 종료하고 다시 열어 재검사하세요. 선택하지 않은 데이터는 유지됩니다."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

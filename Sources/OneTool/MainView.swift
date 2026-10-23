@@ -301,9 +301,11 @@ struct InputPage: View {
                     Image(nsImage: NSWorkspace.shared.icon(forFile: rule.path)).resizable().frame(width: 24, height: 24)
                     Text(rule.name).lineLimit(1)
                     Spacer(minLength: 8)
-                    Button { [id = rule.id] in input.rules.removeAll { $0.id == id } } label: { Image(systemName: "minus.circle") }
-                        .buttonStyle(.borderless).help(LF("Remove %@", rule.name)).accessibilityLabel(LF("Remove %@", rule.name))
-                    sourcePicker(LF("%@ Input Source", rule.name), value: $rule.sourceID)
+                    HStack(spacing: 8) {
+                        sourcePicker(LF("%@ Input Source", rule.name), value: $rule.sourceID)
+                        Button { [id = rule.id] in input.rules.removeAll { $0.id == id } } label: { Image(systemName: "minus.circle") }
+                            .buttonStyle(.borderless).help(LF("Remove %@", rule.name)).accessibilityLabel(LF("Remove %@", rule.name))
+                    }.fixedSize(horizontal: true, vertical: false)
                 }
                 if rule.id != input.rules.last?.id { Divider() }
             }

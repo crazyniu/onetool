@@ -88,7 +88,8 @@ import UniformTypeIdentifiers
             if selection.count > 1, let problem = inventory.problems.first { throw problem }
             var installed = inventory.apps
             if !installed.contains(where: { $0.id == plan.app.id }) { installed.append(plan.app) }
-            return try engine.uninstall(plan, selected: selection, installed: installed, cancelled: { Task.isCancelled })
+            return try engine.uninstall(plan, selected: selection, installed: installed, cancelled: { Task.isCancelled },
+                                        applicationTrash: Self.recycleApplication)
         }
         task = Task {
             defer { busy = false; removing = false; remover = nil }
@@ -105,6 +106,24 @@ import UniformTypeIdentifiers
                 else { self.error = error.localizedDescription }
             }
         }
+    }
+
+    // Called on the remover's background task so the main run loop remains free
+    // for the system's progress/authentication UI and completion handler.
+    nonisolated private static func recycleApplication(_ url: URL) throws -> URL {
+        let completed = DispatchSemaphore(value: 0)
+        var destination: URL?
+        var failure: Error?
+        DispatchQueue.main.async {
+            NSWorkspace.shared.recycle([url]) { moved, error in
+                destination = moved[url]
+                failure = error
+                completed.signal()
+            }
+        }
+        completed.wait()
+        if let destination { return destination }
+        throw failure ?? CocoaError(.fileWriteNoPermission)
     }
 }
 
@@ -226,8 +245,16 @@ struct UninstallPage: View {
             HelpText(problem.message)
             if showPath { Text(problem.url.path).font(.caption).foregroundStyle(.secondary).textSelection(.enabled) }
             if problem.kind == .permission {
-                HelpText(L("File ownership, access rules or macOS privacy controls may block access. Full Disk Access is not confirmed by this error."))
-                PermissionHelpButton()
+                if problem.url.pathExtension == "app" {
+                    HelpText(L("Allow 1Tool to remove applications installed by other apps. macOS may also request administrator approval."))
+                    Button(L("App Management")) { PermissionsCenter.openSettings("Privacy_AppBundles") }
+                } else if problem.url.path.contains("/Library/Containers/") {
+                    HelpText(L("Some app containers require Full Disk Access. After changing access, quit and reopen 1Tool, then scan again. Unselected data stays in place."))
+                    Button(L("Full Disk Access")) { PermissionsCenter.openSettings("Privacy_AllFiles") }
+                } else {
+                    HelpText(L("File ownership, access rules or macOS privacy controls may block access. Full Disk Access is not confirmed by this error."))
+                    PermissionHelpButton()
+                }
             }
             if problem.kind != .protected && problem.kind != .linked && problem.kind != .unsupported {
                 Button(L("Scan App Again"), systemImage: "arrow.clockwise") { uninstaller.rescan() }.disabled(uninstaller.busy)

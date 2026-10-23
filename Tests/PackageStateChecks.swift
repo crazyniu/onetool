@@ -68,7 +68,7 @@ import Foundation
         check(manager.completedCount == 1 && manager.outcomes[pending.packages[0].id] == .completed && manager.outcomes[pending.packages[1].id] == .failed, "partial failure retains exact completed and failed row states")
         check(manager.issue?.kind == .administrator && manager.loaded && manager.canManage && manager.activePackageID == nil, "administrator failure keeps inventory refreshed and ends busy state")
         check(manager.lastFailedRequest?.packages.map(\.name) == ["beta"], "retry excludes already completed packages and requires a new confirmation")
-        check(manager.terminalCommand?.contains("'beta@latest'") == true && manager.terminalCommand?.hasPrefix("'") == true, "manual recovery command quotes the selected executable and failed package")
+        check(manager.terminalCommand?.contains("'beta@latest'") == true && manager.terminalCommand?.contains("'" + cli.path + "'") == true, "manual recovery command quotes the selected executable and failed package")
         try FileManager.default.removeItem(at: root.appendingPathComponent("fail-operation"))
         manager.perform(manager.lastFailedRequest!); try await idle()
         check(manager.issue == nil && manager.lastFailedRequest == nil && manager.completedCount == 1 && manager.updateState == .notChecked, "confirmed retry succeeds and invalidates old update data")
@@ -96,7 +96,7 @@ import Foundation
         check(PackageIssue.classify("curl: Could not resolve host: example.org").kind == .network, "network failure has independent recovery guidance")
         check(PackageIssue.classify("unknown diagnostic").kind == .other, "unknown CLI errors remain undiagnosed")
         let quoted = try PackageEngine(provider: .npm, executable: "/tmp/Node's bin/npm", environment: [:]).terminalCommand(for: .install, name: "alpha", kind: .npm)
-        check(quoted.hasPrefix("'/tmp/Node'\\''s bin/npm'"), "recovery commands escape apostrophes in custom executable paths")
+        check(quoted.contains("'/tmp/Node'\\''s bin/npm'"), "recovery commands escape apostrophes in custom executable paths")
         print("PASS: \(count) package state checks")
     }
 }

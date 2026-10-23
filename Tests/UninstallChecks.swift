@@ -193,6 +193,33 @@ enum UninstallChecks {
         check(unreadableInventory.apps.isEmpty && unreadableInventory.problems.first?.kind == .permission,
               "an unreadable app inventory is reported as incomplete rather than empty")
         try fm.setAttributes([.posixPermissions: 0o700], ofItemAtPath: deniedRoot.path)
+        let systemApp = try makeApp("System Trash Fixture", id: "org.onetool.native-trash-fixture")
+        let systemData = try write("Library/Caches/\(systemApp.bundleID)/cache").deletingLastPathComponent()
+        let nativePlan = try engine.scan(systemApp, installed: [systemApp])
+        try fm.setAttributes([.posixPermissions: 0o555], ofItemAtPath: apps.path)
+        defer { try? fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: apps.path) }
+        var nativeRequestedURL: URL?
+        let cancelledSystem = try engine.uninstall(nativePlan, selected: Set(nativePlan.items.map(\.id)), installed: [systemApp], activity: { .init() }, applicationTrash: { url in
+            nativeRequestedURL = url
+            throw CocoaError(.userCancelled)
+        })
+        check(nativeRequestedURL == systemApp.url, "system authorization receives only the selected app")
+        check(cancelledSystem.cancelled && fm.fileExists(atPath: systemApp.id) && fm.fileExists(atPath: systemData.path), "declining system Trash leaves app and data intact")
+        var nativeDestination: URL?
+        let systemResult = try engine.uninstall(nativePlan, selected: Set(nativePlan.items.map(\.id)), installed: [systemApp], activity: { .init() }, applicationTrash: { url in
+            try fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: apps.path)
+            var destination: NSURL?
+            try fm.trashItem(at: url, resultingItemURL: &destination)
+            nativeDestination = destination as URL?
+            return nativeDestination!
+        })
+        check(systemResult.problems.isEmpty && Set(systemResult.moved) == Set([systemApp.url, systemData]), "native app Trash fallback permits selected data only after the app moves")
+        let manifestData = try Data(contentsOf: systemResult.recoveryURL!.appendingPathComponent("1Tool-Uninstall-Recovery.json"))
+        let nativeManifest = try JSONSerialization.jsonObject(with: manifestData) as! [String: Any]
+        let entries = nativeManifest["items"] as! [[String: String]]
+        check(entries.first?["trashed"] == nativeDestination?.path && entries.first?["stored"] == nil, "recovery manifest records the native Trash destination")
+        if let nativeDestination { try fm.removeItem(at: nativeDestination) }
+        try removeRecovery(systemResult)
         var didCancel = false
         do { _ = try engine.scan(system, installed: [], cancelled: { true }) } catch is CancellationError { didCancel = true }
         check(didCancel, "application scanning honors cancellation")

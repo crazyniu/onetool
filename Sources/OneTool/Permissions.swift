@@ -107,6 +107,15 @@ struct PermissionsPage: View {
         ToolSection(title: L("Files & Folders")) {
             HStack {
                 VStack(alignment: .leading, spacing: 5) {
+                    Text(L("App Management")).fontWeight(.medium)
+                    HelpText(L("Allow 1Tool to remove applications installed by other apps. macOS may also request administrator approval."))
+                }
+                Spacer()
+                Button(L("System Settings…")) { PermissionsCenter.openSettings("Privacy_AppBundles") }
+            }
+            Divider()
+            HStack {
+                VStack(alignment: .leading, spacing: 5) {
                     Text(L("Full Disk Access")).fontWeight(.medium)
                     HelpText(L("Manage in System Settings. macOS does not provide a reliable app-wide status query."))
                 }

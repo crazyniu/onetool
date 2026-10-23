@@ -33,6 +33,13 @@ enum PackageChecks {
         check(rejected, "malformed package output is reported")
         let brew = PackageEngine(provider: .brew, executable: "/fixture/brew", environment: [:])
         let npm = PackageEngine(provider: .npm, executable: "/fixture/npm", environment: [:])
+        let cacheHome = root.appendingPathComponent("npm-cache-home")
+        try FileManager.default.createDirectory(at: cacheHome, withIntermediateDirectories: true)
+        try FileManager.default.createSymbolicLink(atPath: cacheHome.appendingPathComponent(".npm").path, withDestinationPath: "/missing-volume/npm-cache")
+        let cacheEngine = PackageEngine(provider: .npm, executable: "/bin/sh", environment: ["HOME": cacheHome.path, "NPM_CONFIG_CACHE": "/missing-volume/npm-cache"])
+        let cacheProbe = try cacheEngine.run(["-c", "printf '%s' \"$npm_config_cache\"; test -d \"$npm_config_cache\" && test -z \"$NPM_CONFIG_CACHE\""])
+        check(cacheProbe.status == 0 && cacheProbe.output == cacheEngine.npmCacheURL.path, "npm uses its own writable cache despite a broken user cache link")
+        check(try FileManager.default.destinationOfSymbolicLink(atPath: cacheHome.appendingPathComponent(".npm").path) == "/missing-volume/npm-cache", "npm cache recovery preserves the user cache link")
         for action in [PackageAction.install, .uninstall, .upgrade] {
             for kind in [PackageKind.formula, .cask] {
                 let args = try brew.arguments(for: action, name: "owner/tap/tool", kind: kind)
