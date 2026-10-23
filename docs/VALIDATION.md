@@ -1,3 +1,9 @@
+## CI compiler compatibility repair — October 23, 2026
+
+GitHub run [39964376208](https://github.com/crazyniu/onetool/actions/runs/39964376208) failed to type-check two nested concatenation/conditional expressions in `PackageManagement.swift`. Extracted both package-detail strings into explicitly typed helpers using incremental `String.append`, preserving the original separators, version omission and upgrade fallbacks. No package operation behavior changed.
+
+Local universal build and `./test.sh`: PASS (279 shared + 32 package state + 5 cleanup state + 11 system appearance = 327 checks). Previous disposable npm lifecycle results remain valid; this change only formats view text. Rebuilt the development DMG. Logs: `build/ci-expression-{build,tests,package}.log`. The earlier README delivery DMG hash below refers to that earlier build; use the current adjacent `.sha256` file for this updated package.
+
 ## README imagery and toolbar delivery — October 23, 2026
 
 - Set the Settings toolbar item to `primaryAction`: native preview confirms the sidebar toggle at the sidebar upper right and Settings at the content area's far right. Clicked Settings and verified General; collapsed and restored the sidebar successfully.

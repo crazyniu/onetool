@@ -198,6 +198,18 @@ struct PackageConfirmationSheet: View {
         case .upgrade: return provider == .npm ? L("Upgrade these global packages to latest? This can include major version changes.") : L("Upgrade the following packages and their required dependencies?")
         }
     }
+    private func packageDetail(_ package: ManagedPackage) -> String {
+        var detail = package.kind.title
+        if !package.version.isEmpty {
+            detail.append(" · ")
+            detail.append(package.version)
+        }
+        if request.action == .upgrade {
+            detail.append(" → ")
+            detail.append(package.latest ?? "latest")
+        }
+        return detail
+    }
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text(request.action.title).font(.title2).fontWeight(.semibold)
@@ -209,7 +221,7 @@ struct PackageConfirmationSheet: View {
                     ForEach(request.packages) { package in
                         VStack(alignment: .leading, spacing: 4) {
                             Text(package.name).fontWeight(.medium).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
-                            Text(package.kind.title + (package.version.isEmpty ? "" : " · " + package.version) + (request.action == .upgrade ? " → " + (package.latest ?? "latest") : ""))
+                            Text(packageDetail(package))
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                         if package.id != request.packages.last?.id { Divider() }
@@ -295,12 +307,22 @@ private struct PackageRow: View {
     let updatesKnown: Bool
     let outcome: PackageOutcome?
     let action: (PackageAction) -> Void
+    private var packageDetail: String {
+        var detail = package.kind.title
+        detail.append(" · ")
+        detail.append(package.version)
+        if updatesKnown && package.outdated {
+            detail.append(" → ")
+            detail.append(package.latest ?? L("Update Available"))
+        }
+        return detail
+    }
     var body: some View {
         HStack(spacing: 10) {
             Image(systemName: package.kind == .cask ? "app.dashed" : "shippingbox").foregroundStyle(.secondary).frame(width: 22)
             VStack(alignment: .leading, spacing: 4) {
                 Text(package.name).fontWeight(.medium).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
-                Text(package.kind.title + " · " + package.version + (updatesKnown && package.outdated ? " → " + (package.latest ?? L("Update Available")) : ""))
+                Text(packageDetail)
                     .font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
                 if package.pinned { Text(L("Pinned in Homebrew")).font(.caption).foregroundStyle(.secondary) }
                 if let outcome {
