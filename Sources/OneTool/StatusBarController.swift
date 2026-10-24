@@ -147,12 +147,43 @@ import Observation
         themes.addItem(.separator())
         add(L("System Settings…"), to: themes, action: #selector(openSystemAppearance))
         appearance.submenu = themes; menu.addItem(appearance)
+        addNetworkMenu(to: menu)
         menu.addItem(.separator())
         add(L("Open Settings…"), to: menu, action: #selector(openSettings), key: ",")
         menu.addItem(.separator())
         add(L("Quit 1Tool"), to: menu, action: #selector(quit), key: "q")
         return menu
     }
+    private func addNetworkMenu(to menu: NSMenu) {
+        model.network.refresh()
+        let network = model.network
+        let root = NSMenuItem(title: L("DNS & Router"), action: nil, keyEquivalent: "")
+        let choices = NSMenu()
+        choices.autoenablesItems = false
+        for profile in network.profiles {
+            let entry = NSMenuItem(title: profile.address, action: #selector(switchNetwork(_:)), keyEquivalent: "")
+            entry.target = self; entry.representedObject = profile.id.uuidString
+            entry.state = network.isActive(profile) ? .on : .off
+            entry.isEnabled = !network.isChanging && !network.isActive(profile) && network.current?.canSwitch == true
+            choices.addItem(entry)
+        }
+        if network.profiles.isEmpty {
+            let empty = NSMenuItem(title: L("No Saved Routers"), action: nil, keyEquivalent: "")
+            empty.isEnabled = false; choices.addItem(empty)
+        }
+        choices.addItem(.separator())
+        add(L("Manage Routers…"), to: choices, action: #selector(openNetworkSettings))
+        root.submenu = choices; menu.addItem(root)
+    }
+    @objc private func switchNetwork(_ sender: NSMenuItem) {
+        guard let id = sender.representedObject as? String,
+              let profile = model.network.profiles.first(where: { $0.id.uuidString == id }) else { return }
+        Task {
+            await model.network.requestSwitch(profile)
+            if model.network.error != nil || model.network.pendingDHCP != nil { model.openMainWindow?(.network) }
+        }
+    }
+    @objc private func openNetworkSettings() { model.openMainWindow?(.network) }
     private func add(_ title: String, to menu: NSMenu, action: Selector, key: String = "") {
         let entry = NSMenuItem(title: title, action: action, keyEquivalent: key)
         entry.target = self; menu.addItem(entry)

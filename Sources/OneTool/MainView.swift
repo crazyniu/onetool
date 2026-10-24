@@ -14,7 +14,7 @@ struct MainView: View {
                     .padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 12)
                 List {
                     Section(L("Everyday Tools")) {
-                        ForEach([ToolPage.awake, .finder, .keyboard, .displays, .input]) { nav($0) }
+                        ForEach([ToolPage.awake, .finder, .keyboard, .displays, .input, .network]) { nav($0) }
                     }
                     Section(L("Storage & Apps")) {
                         ForEach([ToolPage.cleanup, .uninstall, .brew, .npm]) { nav($0) }
@@ -44,6 +44,7 @@ struct MainView: View {
                         case .keyboard: KeyboardPage(keyboard: model.keyboard)
                         case .displays: DisplaysPage(displays: model.displays)
                         case .input: InputPage(input: model.input)
+                        case .network: NetworkSettingsPage(network: model.network)
                         case .cleanup: CleanupPage(cleanup: model.cleanup)
                         case .uninstall: UninstallPage(uninstaller: model.uninstaller)
                         case .brew: PackageManagementPage(manager: model.brew).id(PackageProvider.brew)

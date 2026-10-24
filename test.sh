@@ -24,3 +24,8 @@ if [[ " $* " == *" --packages-integration "* ]]; then
         Tests/PackageNpmIntegration.swift -o build/package-npm-integration
     python3 Tests/npm-registry-check.py "$PWD/build/package-npm-integration"
 fi
+
+xcrun swiftc -swift-version 5 -parse-as-library \
+    Sources/Shared/Localization.swift Sources/OneTool/NetworkEngine.swift Sources/OneTool/NetworkSettings.swift \
+    Tests/NetworkChecks.swift -o build/network-checks
+build/network-checks

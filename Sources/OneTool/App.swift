@@ -4,7 +4,7 @@ import Observation
 import ServiceManagement
 
 enum ToolPage: String, CaseIterable, Identifiable {
-    case awake, finder, keyboard, displays, input, cleanup, uninstall, brew, npm, appearance, permissions, about
+    case awake, finder, keyboard, displays, input, network, cleanup, uninstall, brew, npm, appearance, permissions, about
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -13,6 +13,7 @@ enum ToolPage: String, CaseIterable, Identifiable {
         case .keyboard: return L("Keyboard Backlight")
         case .displays: return L("Display Brightness")
         case .input: return L("Input Sources")
+        case .network: return L("DNS & Router")
         case .cleanup: return L("Storage Cleanup")
         case .uninstall: return L("App Uninstaller")
         case .brew: return "Homebrew"
@@ -29,6 +30,7 @@ enum ToolPage: String, CaseIterable, Identifiable {
         case .keyboard: return "keyboard"
         case .displays: return "display"
         case .input: return "globe"
+        case .network: return "network"
         case .cleanup: return "internaldrive"
         case .uninstall: return "trash"
         case .brew: return "shippingbox"
@@ -47,6 +49,7 @@ enum ToolPage: String, CaseIterable, Identifiable {
         case .finder, .about: rgb = (0, 122, 255)
         case .keyboard, .appearance: rgb = (155, 81, 216)
         case .displays: rgb = (0, 149, 199)
+        case .network: rgb = (0, 143, 156)
         case .input: rgb = (88, 86, 214)
         case .cleanup: rgb = (0, 143, 156)
         case .uninstall, .npm: rgb = (240, 64, 72)
@@ -61,6 +64,7 @@ enum ToolPage: String, CaseIterable, Identifiable {
         case .keyboard: return L("Set a comfortable keyboard backlight level.")
         case .displays: return L("Adjust each display independently.")
         case .input: return L("Use your preferred input source in each app.")
+        case .network: return L("Switch DNS and router together using your saved addresses.")
         case .cleanup: return L("Find what can go. Keep what matters.")
         case .uninstall: return L("Remove apps and review the files they leave behind.")
         case .brew: return L("Install, uninstall and upgrade Homebrew tools and apps.")
@@ -83,6 +87,7 @@ enum ToolPage: String, CaseIterable, Identifiable {
     let cleanup = Cleanup()
     let permissions = PermissionsCenter()
     let systemTheme = SystemTheme()
+    let network = NetworkSettings()
     let uninstaller = AppUninstaller()
     let brew = PackageManager(.brew)
     let npm = PackageManager(.npm)
@@ -99,7 +104,7 @@ enum ToolPage: String, CaseIterable, Identifiable {
         loginStatus = SMAppService.mainApp.status
     }
     func refresh() {
-        finder.refreshStatus(); keyboard.refresh(); input.refresh(); awake.checkExpiry(); permissions.refresh(); systemTheme.refresh()
+        finder.refreshStatus(); keyboard.refresh(); input.refresh(); awake.checkExpiry(); permissions.refresh(); systemTheme.refresh(); network.refresh()
         loginStatus = SMAppService.mainApp.status
     }
 }

@@ -71,3 +71,5 @@ Enable the input sources you need in System Settings before creating rules. Avoi
 Bug reports and focused pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md). See [DESIGN.md](DESIGN.md) for UI conventions and [validation notes](docs/VALIDATION.md) for the current evidence boundary.
 
 GPL-3.0-or-later. Adapted components retain their upstream notices; see [NOTICE.md](NOTICE.md) and [porting notes](docs/PORTING.md). The blue-and-white wrench artwork is original to this project.
+
+DNS and router switching: choose a saved address in the status-item menu to set DNS and the IPv4 gateway together. Multiple profiles and original-configuration restore are supported. See [network switching](docs/NETWORK.md).

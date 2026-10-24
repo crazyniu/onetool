@@ -39,3 +39,5 @@ GitHub 工作流自动构建通用 DMG。配置 Developer ID Application 证书�
 GPL-3.0-or-later；上游来源和版权见 [NOTICE.md](NOTICE.md)。欢迎提交问题和 Pull Request。
 
 防休眠可直接在状态栏面板中开关和选择时长，右键菜单也保留直接控制。运行中更改时长会重新计时；自动启动和高级休眠选项收在设置页的折叠区域。
+
+DNS 与路由切换：从菜单栏右键菜单选择已保存的地址，同时设置 DNS 和 IPv4 网关；支持多个方案及恢复切换前的配置。详见 [网络切换说明](docs/NETWORK.md)。

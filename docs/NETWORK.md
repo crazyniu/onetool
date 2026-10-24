@@ -1,0 +1,27 @@
+# DNS and router switching
+
+The status item's right-click menu has a **DNS & Router** submenu containing saved IP addresses and **Manage Routers…**. Connection details and manual restore are omitted from this menu. **Manage Routers…** opens the same page in the settings sidebar. Save any number of IPv4 addresses, then click one to set both the current connection's DNS server and IPv4 router. Entries display only the IP address, with no custom names. Adding or deleting an address does not change system settings. No profile is created or applied automatically.
+
+The current connection is detected from macOS’s primary IPv4 service in the current network location. There is no connection picker. An inactive service is never used as a fallback. Supported connections are enabled physical Ethernet/Wi-Fi services with a usable IPv4 address and mask. Saved addresses must use a different host address on the current connection's subnet. Network, broadcast, multicast, loopback, malformed and off-subnet addresses are rejected at switch time. Saved addresses are local UserDefaults data.
+
+Switching retains the host IP, subnet mask, other IPv4 keys, additional routes and DNS search domains. DHCP connections require an explicit acknowledgement that switching changes IPv4 to Manual using the current lease address. Reserve that IP on the router to prevent DHCP address conflicts. IPv6, proxies, VPNs and service order remain unchanged and can affect actual traffic. This feature changes the current macOS connection's IPv4 default gateway; it does not configure a physical router or arbitrary destination routes.
+
+## System writes and recovery
+
+The implementation uses Apple's SystemConfiguration framework and native administrator authorization. Read-only discovery never asks for authorization. DNS and IPv4 are staged in the same SCPreferences session, locked, committed and applied together. After authorization, the service/location/configuration is checked again; a changed DHCP lease is rejected. No user text is passed to a shell or elevated helper executable.
+
+Before the first switch, the complete IPv4 and DNS protocol dictionaries are saved under the location/service identity. Later switches preserve this original backup. The settings page’s **Restore Previous Configuration** action restores those dictionaries, including DHCP configuration and automatic DNS. A verified persisted restore clears the backup. Restore overwrites subsequent IPv4/DNS edits for that connection, as explicitly requested by the restore action.
+
+A successful switch requires persisted settings plus the live service router, configured/resolved service DNS and (for the primary connection) global DNS to agree. Configuration installation is given up to five seconds. An apply failure attempts to restore both previous protocols. A verification failure restores the immediately preceding configuration only if the current persisted configuration is still the one written by 1Tool, preserving concurrent external edits. Any failed restoration is reported for recovery through macOS System Settings. Restore checks persisted dictionaries; it does not prove Internet reachability or DHCP lease acquisition.
+
+## Validation (2026-10-24)
+
+- Submission snapshot: Developer ID signed universal build passed, followed by 370 assertions (286 shared/resource, 32 package-state, 5 cleanup-state, 11 appearance and 36 network checks). Build and tests ran sequentially in an isolated snapshot containing exactly the submitted source. The local combined working tree separately passed 44 independent app-update checks.
+- Network fixtures cover address persistence/add/delete without system writes, invalid and unsafe addresses, preservation of IP/mask/routes/search domains, verified paired changes, cancellation, rollback when runtime state disagrees, DHCP acknowledgement and overlapping requests.
+- Native read-only discovery is checked against this Mac's active Wi-Fi state. No system write is made by automated tests.
+- Build: `ARCHS='arm64 x86_64' ./build.sh` (Developer ID signing).
+- Native administrator authorization was triggered by a user-initiated switch; the user cancelled it. SCHelper reported `errAuthorizationCanceled` (-60006), and the current gateway/DNS remained 192.168.1.250. Accepted authorization, physical gateway switching, traffic behavior, DHCP renewal, and live rollback: **NOT RUN**.
+
+API references: [SCPreferencesCreateWithAuthorization](https://developer.apple.com/documentation/systemconfiguration/scpreferencescreatewithauthorization(_:_:_:_:)), [SCNetworkProtocolSetConfiguration](https://developer.apple.com/documentation/systemconfiguration/scnetworkprotocolsetconfiguration(_:_:)), [SCPreferencesCommitChanges](https://developer.apple.com/documentation/systemconfiguration/scpreferencescommitchanges(_:)), [SCPreferencesApplyChanges](https://developer.apple.com/documentation/systemconfiguration/scpreferencesapplychanges(_:)).
+
+The combined local working tree (including independent About-page update changes) was installed at `/Applications/1Tool.app`; the previous application is backed up at `build/1Tool-before-network-20261024-121609.app`. Installed and built executables match SHA-256 `936580c1c0a67ddefc866aa6fc9807e09f39509ebebf23f2d0b318974a029afa`. Both architectures are included and the Developer ID signature was verified. The final native settings page retained the user’s saved IP addresses 192.168.1.250 and 192.168.1.1.
